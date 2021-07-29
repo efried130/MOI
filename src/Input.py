@@ -148,8 +148,10 @@ class Input:
         Dictionary is organized with a key of reach identifier and a value of
         SoS file as a Path object.
 
-        TODO: Organize with key of basin number and value of dict with reach ids
+        TODO: 
+        - Organize with key of basin number and value of dict with reach ids
         and sos file.
+        - Decide on basin identifier (include continent?)
         """
 
         # index = int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX"))
@@ -158,7 +160,7 @@ class Input:
             data = json.load(json_file)
 
         return {
-            "basin_id" : int(str(data[index]["reach_id"])[1:6]),
+            "basin_id" : int(str(data[index]["reach_id"])[1:6]),    ## TODO
             "reach_ids" : [data[index]["reach_id"]],    ## TODO
             "sos" : data[index]["sos"]
         }
