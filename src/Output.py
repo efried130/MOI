@@ -84,29 +84,24 @@ class Output:
         q_var[:] = self.stage_estimate["q_mean"][:]
 
         # FLPE results
-        # gb_var = out.createVariable("geobam", "f4", ("nr"),
-        #     fill_value=self.FILL_VALUE)
-        gb_var = out.createVariable("geobam", "f4", fill_value=self.FILL_VALUE)    ## TODO
+        gb_var = out.createVariable("geobam", "f4", ("nr"),
+            fill_value=self.FILL_VALUE)
         gb_var[:] = self.stage_estimate["flpe"]["geobam"]
 
-        # hv_var = out.createVariable("hivdi", "f4", ("nr"),
-        #     fill_value=self.FILL_VALUE)
-        hv_var = out.createVariable("hivdi", "f4", fill_value=self.FILL_VALUE)    ## TODO
+        hv_var = out.createVariable("hivdi", "f4", ("nr"),
+            fill_value=self.FILL_VALUE)
         hv_var[:] = self.stage_estimate["flpe"]["hivdi"]
 
-        # mm_var = out.createVariable("metroman", "f4", ("nr"),
-        #     fill_value=self.FILL_VALUE)
-        mm_var = out.createVariable("metroman", "f4", fill_value=self.FILL_VALUE)    ## TODO
+        mm_var = out.createVariable("metroman", "f4", ("nr"),
+            fill_value=self.FILL_VALUE)
         mm_var[:] = self.stage_estimate["flpe"]["metroman"]
 
-        # mo_var = out.createVariable("momma", "f4", ("nr"),
-        #     fill_value=self.FILL_VALUE)
-        mo_var = out.createVariable("momma", "f4", fill_value=self.FILL_VALUE)    ## TODO
+        mo_var = out.createVariable("momma", "f4", ("nr"),
+            fill_value=self.FILL_VALUE)
         mo_var[:] = self.stage_estimate["flpe"]["momma"]
 
-        # sd_var = out.createVariable("sad", "f4", ("nr"),
-        #     fill_value=self.FILL_VALUE)
-        sd_var = out.createVariable("sad", "f4", fill_value=self.FILL_VALUE)    ## TODO
+        sd_var = out.createVariable("sad", "f4", ("nr"),
+            fill_value=self.FILL_VALUE)
         sd_var[:] = self.stage_estimate["flpe"]["sad"]
 
         out.close()
