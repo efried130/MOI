@@ -71,7 +71,7 @@ class Output:
 
         # Data
         # reach identifiers
-        reach_id_v = out.createVariable("reach_id", "i8")
+        reach_id_v = out.createVariable("reach_id", "i8", ("nr",))
         reach_id_v.long_name = "reach ID from prior river database"
         reach_id_v.comment = "Unique reach identifier from the prior river " \
             + "database. The format of the identifier is CBBBBBRRRRT, where " \
