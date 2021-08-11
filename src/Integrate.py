@@ -21,6 +21,8 @@ class Integrate:
 
     Methods
     -------
+    get_pre_mean_q()
+        calculate the mean discharge for each reach-level FLPE algorithm
     integrate()
         integrate and store reach-level data
     """
@@ -40,6 +42,7 @@ class Integrate:
         self.alg_dict = alg_dict
         self.basin_dict = basin_dict
         self.integ_dict = {
+            "pre_q_mean": np.array([]),
             "q_mean": np.array([]),
             "flpe": {
                 "geobam" : np.array([]),
@@ -52,6 +55,16 @@ class Integrate:
         self.moi_params = None
         self.stage1_estimates = None
         self.sos_dict = sos_dict
+
+    def get_pre_mean_q(self):
+        """Calculate the mean discharge for each reach-level FLPE algorithm.
+
+        This should be done prior to integration operations.
+        
+        TODO: Implement
+        """
+
+        raise NotImplementedError
 
     def integrate(self):
         """Integrate reach-level FLPE data.

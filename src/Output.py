@@ -79,7 +79,12 @@ class Output:
             + "database. The format of the identifier is CBBBBBRRRRT, where " \
             + "C=continent, B=basin, R=reach, T=type."
         reach_id_v[:] = np.array(self.basin_dict["reach_ids"], dtype=int)
-        
+
+        # pre integrator mean discharge
+        pre_q_var = out.createVariable("pre_Qmean", "f4", ("nr",),
+            fill_value=self.FILL_VALUE)
+        pre_q_var[:] = np.random.uniform(size=len(nr[:]))
+
         # mean discharge
         q_var = out.createVariable("Qmean", "f4", ("nr",),
             fill_value=self.FILL_VALUE)
