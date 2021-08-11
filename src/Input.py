@@ -83,56 +83,126 @@ class Input:
             hv_file = self.alg_dir / "hivdi" / f"{r_id}_hivdi.nc"
             mo_file = self.alg_dir / "momma" / f"{r_id}_momma.nc"
             sd_file = self.alg_dir / "sad" / f"{r_id}_sad.nc"
-            # mm_file = glob(str(self.alg_dir / "metroman" / f"*{r_id}*_metroman.nc"))    ## TODO hold until results are available
+            mm_file = glob(str(self.alg_dir / "metroman" / f"*{r_id}*_metroman.nc"))    ## TODO hold until results are available
 
             if gb_file.exists() and hv_file.exists() and mo_file.exists() \
                 and sd_file.exists():
 
-                # geobam
-                gb = Dataset(gb_file, 'r', format="NETCDF4")
-                self.alg_dict["geobam"][r_id] = {
-                    "q": np.array(self.__get_gb_data(gb, "logQ", True)),
-                    "n": np.array(self.__get_gb_data(gb, "logn_man", True)),
-                    "a0": np.array(self.__get_gb_data(gb, "A0", False))
-                }
-                gb.close()
+                self.__extract_valid(r_id, gb_file, hv_file, mo_file, sd_file, mm_file)
+            else:
+                self.__indicate_no_data(r_id)
 
-                # hivdi
-                hv = Dataset(hv_file, 'r', format="NETCDF4")
-                self.alg_dict["hivdi"][r_id] = {
-                    "q" : hv["reach"]["Q"][:].filled(np.nan),
-                    # "n" : hv["reach"]["alpha"][:].filled(np.nan),  ## TODO locate n
-                    "a0" : hv["reach"]["A0"][:].filled(np.nan)
-                }
-                hv.close()
+    def __extract_valid(self, r_id, gb_file, hv_file, mo_file, sd_file, mm_file):
+        """ Extract valid data from the output of each reach-level FLPE alg.
 
-                # momma
-                mo = Dataset(mo_file, 'r', format="NETCDF4")
-                self.alg_dict["momma"][r_id] = {
-                    "q" : mo["Q"][:].filled(np.nan),
-                    "n" : mo["n"][:].filled(np.nan)
-                    # "a0" : ...                                    ## TODO locate or calculate A0
-                }
-                mo.close()
+        TODO: Metroman results
 
-                # sad
-                sd = Dataset(sd_file, 'r', format="NETCDF4")
-                self.alg_dict["sad"][r_id] = {
-                    "q" : sd["Qa"][:].filled(np.nan),
-                    "n" : sd["n"][:].filled(np.nan),
-                    "a0" : sd["A0"][:].filled(np.nan)
-                }
-                sd.close()
+        Parameters
+        ----------
+        r_id: str
+            Unique reach identifier
+        gb_file: Path
+            Path to geoBAM results file
+        hv_file: Path
+            Path to HiVDI results file
+        mo_file: Path
+            Path to MOMMA results file
+        sd_file: Path
+            Path to SAD results file
+        mm_file: Path
+            Path to MetroMan results file
+        """
 
-                # metroman    ## TODO hold until results are available
-                # mm = Dataset(mm_file, 'r', format="NETCDF4")
-                # index = np.where(mm["reach_id"][:] == r_id)
-                # self.alg_dict["metroman"][r_id] = {
-                #     "q" : mm["allq"][index].filled(np.nan),
-                #     "n" : mm["nahat"][index].filled(np.nan),
-                #     "a0" : mm["A0hat"][index].filled(np.nan)
-                # }
-                # mm.close()
+        # geobam
+        gb = Dataset(gb_file, 'r', format="NETCDF4")
+        self.alg_dict["geobam"][r_id] = {
+            "q": np.array(self.__get_gb_data(gb, "logQ", True)),
+            "n": np.array(self.__get_gb_data(gb, "logn_man", True)),
+            "a0": np.array(self.__get_gb_data(gb, "A0", False))
+        }
+        gb.close()
+
+        # hivdi
+        hv = Dataset(hv_file, 'r', format="NETCDF4")
+        self.alg_dict["hivdi"][r_id] = {
+            "q" : hv["reach"]["Q"][:].filled(np.nan),
+            # "n" : hv["reach"]["alpha"][:].filled(np.nan),  ## TODO locate n
+            "a0" : hv["reach"]["A0"][:].filled(np.nan)
+        }
+        hv.close()
+
+        # momma
+        mo = Dataset(mo_file, 'r', format="NETCDF4")
+        self.alg_dict["momma"][r_id] = {
+            "q" : mo["Q"][:].filled(np.nan),
+            "n" : mo["n"][:].filled(np.nan)
+            # "a0" : ...                                    ## TODO locate or calculate A0
+        }
+        mo.close()
+
+        # sad
+        sd = Dataset(sd_file, 'r', format="NETCDF4")
+        self.alg_dict["sad"][r_id] = {
+            "q" : sd["Qa"][:].filled(np.nan),
+            "n" : sd["n"][:].filled(np.nan),
+            "a0" : sd["A0"][:].filled(np.nan)
+        }
+        sd.close()
+
+        # metroman    ## TODO hold until results are available
+        # mm = Dataset(mm_file, 'r', format="NETCDF4")
+        # index = np.where(mm["reach_id"][:] == r_id)
+        # self.alg_dict["metroman"][r_id] = {
+        #     "q" : mm["allq"][index].filled(np.nan),
+        #     "n" : mm["nahat"][index].filled(np.nan),
+        #     "a0" : mm["A0hat"][index].filled(np.nan)
+        # }
+        # mm.close()
+
+    def __indicate_no_data(self, r_id):
+        """Indicate no data is available for the reach.
+
+        TODO: Metroman results
+
+        Parameters
+        ----------
+        r_id: str
+            Unique reach identifier
+        """
+
+        self.alg_dict["geobam"][r_id] = {
+            "q": np.nan,
+            "n": np.nan,
+            "a0": np.nan
+        }
+
+        # hivdi
+        self.alg_dict["hivdi"][r_id] = {
+            "q" : np.nan,
+            # "n" : np.nan,  ## TODO locate n
+            "a0" : np.nan
+        }
+
+        # momma
+        self.alg_dict["momma"][r_id] = {
+            "q" : np.nan,
+            "n" : np.nan
+            # "a0" : np.nan                                 ## TODO locate or calculate A0
+        }
+
+        # sad
+        self.alg_dict["sad"][r_id] = {
+            "q" : np.nan,
+            "n" : np.nan,
+            "a0" : np.nan
+        }
+
+        # MetroMan    ## TODO hold until results are available
+        # self.alg_dict["metroman"][r_id] = {
+        #     "q" : np.nan,
+        #     "n" : np.nan,
+        #     "a0" : np.nan
+        # }
 
     def __get_gb_data(self, gb, group, logged):
         """Return geoBAM data as a numpy array.
