@@ -48,8 +48,9 @@ class Output:
         
         TODO: 
         - Add optional attribute metadata like valid
-        - Decide on how to store output of FLPE integration (how to identify
-        which data corresponds to which algorithm)
+        - Should variable output be (nr, nt)?
+        - Storage of FLPE algorithms
+        - Storage of actual Integrator processing
         """
 
         # NetCDF file creation
@@ -59,15 +60,16 @@ class Output:
         
         # Dimensions and coordinate variables
         out.createDimension("nr", len(self.basin_dict["reach_ids"]))
-        out.createDimension("nflpe", len(self.stage_estimate["flpe"].keys()))
         nr = out.createVariable("nr", "i4", ("nr",))
         nr.units = "reaches"
         nr.long_name = "number of reaches"
         nr[:] = range(1, len(self.basin_dict["reach_ids"]) + 1)
+
+        # out.createDimension("nflpe", len(self.stage_estimate["flpe"].keys()))
         # nf = out.createVariable("nflpe", "i4", ("nflpe",))
         # nf.units = "algorithms"
         # nf.long_name = "number of reach-level FLPE algorithms"
-        # nf[:] = range(1, len(self.stage_estimate["flpe"].keys()) + 1)    ## TODO
+        # nf[:] = range(1, len(self.stage_estimate["flpe"].keys()) + 1)    ## TODO Figure out time series and FLPE storage
 
         # Data
         # reach identifiers
@@ -81,27 +83,33 @@ class Output:
         # mean discharge
         q_var = out.createVariable("Qmean", "f4", ("nr",),
             fill_value=self.FILL_VALUE)
-        q_var[:] = self.stage_estimate["q_mean"][:]
+        # q_var[:] = self.stage_estimate["q_mean"][:]    ## TODO Store processing
+        q_var[:] = np.random.uniform(size=len(nr[:]))
 
         # FLPE results
         gb_var = out.createVariable("geobam", "f4", ("nr"),
             fill_value=self.FILL_VALUE)
-        gb_var[:] = self.stage_estimate["flpe"]["geobam"]
+        # gb_var[:] = self.stage_estimate["flpe"]["geobam"]    ## TODO Store processing
+        gb_var[:] = np.random.uniform(size=len(nr[:]))
 
         hv_var = out.createVariable("hivdi", "f4", ("nr"),
             fill_value=self.FILL_VALUE)
-        hv_var[:] = self.stage_estimate["flpe"]["hivdi"]
+        # hv_var[:] = self.stage_estimate["flpe"]["hivdi"]    ## TODO Store processing
+        hv_var[:] = np.random.uniform(size=len(nr[:]))
 
         mm_var = out.createVariable("metroman", "f4", ("nr"),
             fill_value=self.FILL_VALUE)
-        mm_var[:] = self.stage_estimate["flpe"]["metroman"]
+        # mm_var[:] = self.stage_estimate["flpe"]["metroman"]    ## TODO Store processing
+        mm_var[:] = np.random.uniform(size=len(nr[:]))
 
         mo_var = out.createVariable("momma", "f4", ("nr"),
             fill_value=self.FILL_VALUE)
-        mo_var[:] = self.stage_estimate["flpe"]["momma"]
+        # mo_var[:] = self.stage_estimate["flpe"]["momma"]    ## TODO Store processing
+        mo_var[:] = np.random.uniform(size=len(nr[:]))
 
         sd_var = out.createVariable("sad", "f4", ("nr"),
             fill_value=self.FILL_VALUE)
-        sd_var[:] = self.stage_estimate["flpe"]["sad"]
+        # sd_var[:] = self.stage_estimate["flpe"]["sad"]    ## TODO Store processing
+        sd_var[:] = np.random.uniform(size=len(nr[:]))
 
         out.close()
