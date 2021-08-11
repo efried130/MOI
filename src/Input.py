@@ -71,53 +71,68 @@ class Input:
         """Extracts and stores reach-level FLPE algorithm data in alg_dict.
 
         TODO: 
-        - Modify to store basin-level data instead of reach.
+        - Consider storage of basin-level data in a DataFrame if possible.
         - Locate HiVDI n parameter.
         - Locate MOMMA A0 parameter.
+        - Add in MetroMan results once available.
         """
 
-        reach_id = self.basin_dict["reach_ids"][0]    ## TODO
+        reach_ids = self.basin_dict["reach_ids"]
+        for r_id in reach_ids:
+            gb_file = self.alg_dir / "geobam" / f"{r_id}_geobam.nc"
+            hv_file = self.alg_dir / "hivdi" / f"{r_id}_hivdi.nc"
+            mo_file = self.alg_dir / "momma" / f"{r_id}_momma.nc"
+            sd_file = self.alg_dir / "sad" / f"{r_id}_sad.nc"
+            # mm_file = glob(str(self.alg_dir / "metroman" / f"*{r_id}*_metroman.nc"))    ## TODO hold until results are available
 
-        # geobam
-        gb_file = self.alg_dir / "geobam" / f"{reach_id}_geobam.nc"
-        gb = Dataset(gb_file, 'r', format="NETCDF4")
-        self.alg_dict["geobam"]["q"] = self.__get_gb_data(gb, "logQ", True)
-        self.alg_dict["geobam"]["n"] = self.__get_gb_data(gb, "logn_man", True)
-        self.alg_dict["geobam"]["a0"] = self.__get_gb_data(gb, "A0", False)
-        gb.close()
+            if gb_file.exists() and hv_file.exists() and mo_file.exists() \
+                and sd_file.exists():
 
-        # hivdi
-        hivdi_file = self.alg_dir / "hivdi" / f"{reach_id}_hivdi.nc"
-        hv = Dataset(hivdi_file, 'r', format="NETCDF4")
-        self.alg_dict["hivdi"]["q"] = hv["reach"]["Q"][:].filled(np.nan)
-        self.alg_dict["hivdi"]["n"] = hv["reach"]["alpha"][:].filled(np.nan)  ## TODO
-        self.alg_dict["hivdi"]["a0"] = hv["reach"]["A0"][:].filled(np.nan)
-        hv.close()
+                # geobam
+                gb = Dataset(gb_file, 'r', format="NETCDF4")
+                self.alg_dict["geobam"][r_id] = {
+                    "q": np.array(self.__get_gb_data(gb, "logQ", True)),
+                    "n": np.array(self.__get_gb_data(gb, "logn_man", True)),
+                    "a0": np.array(self.__get_gb_data(gb, "A0", False))
+                }
+                gb.close()
 
-        # momma
-        momma_file = self.alg_dir / "momma" / f"{reach_id}_momma.nc"
-        mo = Dataset(momma_file, 'r', format="NETCDF4")
-        self.alg_dict["momma"]["q"] = mo["Q"][:].filled(np.nan)
-        self.alg_dict["momma"]["n"] = mo["n"][:].filled(np.nan)
-        self.alg_dict["momma"]["a0"] = mo["Y"][:].filled(np.nan)    ## TODO
-        mo.close()
+                # hivdi
+                hv = Dataset(hv_file, 'r', format="NETCDF4")
+                self.alg_dict["hivdi"][r_id] = {
+                    "q" : hv["reach"]["Q"][:].filled(np.nan),
+                    # "n" : hv["reach"]["alpha"][:].filled(np.nan),  ## TODO locate n
+                    "a0" : hv["reach"]["A0"][:].filled(np.nan)
+                }
+                hv.close()
 
-        # sad
-        sad_file = self.alg_dir / "sad" / f"{reach_id}_sad.nc"
-        sd = Dataset(sad_file, 'r', format="NETCDF4")
-        self.alg_dict["sad"]["q"] = sd["Qa"][:].filled(np.nan)
-        self.alg_dict["sad"]["n"] = sd["n"][:].filled(np.nan)
-        self.alg_dict["sad"]["a0"] = sd["A0"][:].filled(np.nan)    ## TODO
-        sd.close()
+                # momma
+                mo = Dataset(mo_file, 'r', format="NETCDF4")
+                self.alg_dict["momma"][r_id] = {
+                    "q" : mo["Q"][:].filled(np.nan),
+                    "n" : mo["n"][:].filled(np.nan)
+                    # "a0" : ...                                    ## TODO locate or calculate A0
+                }
+                mo.close()
 
-        # metroman
-        metroman_file = [ name for name in glob(str(self.alg_dir / "metroman" / f"*{reach_id}*_metroman.nc"))][0]
-        mm = Dataset(metroman_file, 'r', format="NETCDF4")
-        index = np.where(mm["reach_id"][:] == reach_id)
-        self.alg_dict["metroman"]["q"] = mm["allq"][index].filled(np.nan)
-        self.alg_dict["metroman"]["n"] = mm["nahat"][index].filled(np.nan)
-        self.alg_dict["metroman"]["a0"] = mm["A0hat"][index].filled(np.nan)
-        mm.close()        
+                # sad
+                sd = Dataset(sd_file, 'r', format="NETCDF4")
+                self.alg_dict["sad"][r_id] = {
+                    "q" : sd["Qa"][:].filled(np.nan),
+                    "n" : sd["n"][:].filled(np.nan),
+                    "a0" : sd["A0"][:].filled(np.nan)
+                }
+                sd.close()
+
+                # metroman    ## TODO hold until results are available
+                # mm = Dataset(mm_file, 'r', format="NETCDF4")
+                # index = np.where(mm["reach_id"][:] == r_id)
+                # self.alg_dict["metroman"][r_id] = {
+                #     "q" : mm["allq"][index].filled(np.nan),
+                #     "n" : mm["nahat"][index].filled(np.nan),
+                #     "a0" : mm["A0hat"][index].filled(np.nan)
+                # }
+                # mm.close()
 
     def __get_gb_data(self, gb, group, logged):
         """Return geoBAM data as a numpy array.
@@ -147,20 +162,16 @@ class Input:
         
         Dictionary is organized with a key of reach identifier and a value of
         SoS file as a Path object.
-
-        TODO: 
-        - Organize with key of basin number and value of dict with reach ids
-        and sos file.
-        - Decide on basin identifier (include continent?)
         """
 
         # index = int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX"))
-        index = 13
+        index = 3
         with open(basin_json) as json_file:
             data = json.load(json_file)
 
         return {
-            "basin_id" : int(str(data[index]["reach_id"])[1:6]),    ## TODO
-            "reach_ids" : [data[index]["reach_id"]],    ## TODO
-            "sos" : data[index]["sos"]
+            "basin_id" : int(data[index]["basin_id"]),    ## TODO
+            "reach_ids" : data[index]["reach_id"],    ## TODO
+            "sos" : data[index]["sos"],
+            "sword": data[index]["sword"]
         }
