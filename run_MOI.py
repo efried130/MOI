@@ -14,7 +14,7 @@ INPUT_DIR = Path("")
 OUTPUT_DIR = Path("")
 
 def main():
-    input = Input(INPUT_DIR / "flpe", INPUT_DIR / "reaches.json", INPUT_DIR / "sos")
+    input = Input(INPUT_DIR / "flpe", INPUT_DIR / "basin.json", INPUT_DIR / "sos")
     input.extract_alg()
 
     integrate = Integrate(input.alg_dict, input.basin_dict, input.sos_dict)

@@ -8,6 +8,7 @@ TO DO:
 - Integrate.moi_params initialization
 - Integrate.stage1_estimate initialization
 - Integrate.stage2_estimate addition ??
+- Integrate.get_pre_mean_q implementation
 - Integrate.integrate implementation
 - Output.write_output: Add optional attribute metadata, decide on how to store output of FLPE integration
 
