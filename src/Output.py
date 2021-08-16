@@ -27,7 +27,7 @@ class Output:
     
     FILL_VALUE = -999999999999
 
-    def __init__(self, basin_dict, out_dir, integ_dict):
+    def __init__(self, basin_dict, out_dir, integ_dict, alg_dict, obs_dict):
         """
         Parameters
         ----------
@@ -42,9 +42,11 @@ class Output:
         self.basin_dict = basin_dict
         self.out_dir = out_dir
         self.stage_estimate = integ_dict
+        self.alg_dict = alg_dict
+        self.obs_dict = obs_dict
 
     def write_output(self):
-        """Write data stored to NetCDF file labelled with basin id.
+        """Write data stored to NetCDF files for each reach
         
         TODO: 
         - Add optional attribute metadata like valid
@@ -53,17 +55,52 @@ class Output:
         - Storage of actual Integrator processing
         """
 
-        # NetCDF file creation
-        out_file = self.out_dir / f"{str(self.basin_dict['basin_id'])}_integrator.nc"
-        out = Dataset(out_file, 'w', format="NETCDF4")
-        out.production_date = datetime.now().strftime('%d-%b-%Y %H:%M:%S')
+        fillvalue = -999999999999
+
+        for reach in self.basin_dict['reach_ids']:
+
+             iDelete=self.obs_dict[reach]['iDelete']
+             shape_iDelete=np.shape(iDelete)
+             nDelete=shape_iDelete[1]
+             iInsert=iDelete-np.arange(nDelete)
+             iInsert=np.reshape(iInsert,[nDelete,]) 
+
+             self.obs_dict[reach]['nt'] += nDelete
+
+             #print(self.alg_dict['geobam'][reach]['integrator']['q'])
+             #print(self.alg_dict['geobam'][reach]['integrator']['q'].shape)
+
+             self.alg_dict['geobam'][reach]['integrator']['q']=np.insert( \
+                   self.alg_dict['geobam'][reach]['integrator']['q'],iInsert,fillvalue,1)
+
+             # NetCDF file creation
+             out_file = self.out_dir / f"{reach}_integrator.nc"
+             out = Dataset(out_file, 'w', format="NETCDF4")
+             out.production_date = datetime.now().strftime('%d-%b-%Y %H:%M:%S')
+
+             # Dimensions and coordinate variables
+             out.createDimension("nt", self.obs_dict[reach]['nt'] )
+             nt = out.createVariable("nt", "i4", ("nt",))
+             nt.units = "time steps"
+             nt[:] = range(self.obs_dict[reach]['nt'])
+
+             # Geobam
+             gb = out.createGroup("geobam")
+             gbq  = out.createVariable("geobam/q", "f8", ("nt",), fill_value=fillvalue)
+             gbq[:] = self.alg_dict['geobam'][reach]['integrator']['q']
+             gb_a0  = out.createVariable("geobam/a0", "f8", fill_value=fillvalue)
+             gb_a0[:] = self.alg_dict['geobam'][reach]['integrator']['a0']
+             gb_n  = out.createVariable("geobam/n", "f8", fill_value=fillvalue)
+             gb_n[:] = self.alg_dict['geobam'][reach]['integrator']['n']
+             gb_qbar_stage1  = out.createVariable("geobam/qbar_reachScale", "f8", fill_value=fillvalue)
+             gb_qbar_stage1[:] = self.alg_dict['geobam'][reach]['qbar']
+             gb_qbar_stage2  = out.createVariable("geobam/qbar_basinScale", "f8", fill_value=fillvalue)
+             gb_qbar_stage2[:] = self.alg_dict['geobam'][reach]['integrator']['qbar']
+
+             out.close()
+
+        '''
         
-        # Dimensions and coordinate variables
-        out.createDimension("nr", len(self.basin_dict["reach_ids"]))
-        nr = out.createVariable("nr", "i4", ("nr",))
-        nr.units = "reaches"
-        nr.long_name = "number of reaches"
-        nr[:] = range(1, len(self.basin_dict["reach_ids"]) + 1)
 
         # out.createDimension("nflpe", len(self.stage_estimate["flpe"].keys()))
         # nf = out.createVariable("nflpe", "i4", ("nflpe",))
@@ -117,4 +154,4 @@ class Output:
         # sd_var[:] = self.stage_estimate["flpe"]["sad"]    ## TODO Store processing
         sd_var[:] = np.random.uniform(size=len(nr[:]))
 
-        out.close()
+        '''

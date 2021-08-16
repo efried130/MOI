@@ -92,28 +92,42 @@ class Integrate:
                    i+=1
              QbarBar=np.nanmean(Qbar)
              for reach in self.alg_dict[alg]:
-                   self.alg_dict[alg][reach]['qbar_moi']=QbarBar
+                   self.alg_dict[alg][reach]['integrator']={}
+                   self.alg_dict[alg][reach]['integrator']['qbar']=QbarBar
 
         #2 compute optimal parameters for each algorithm's flow law
         #   just working with BAM to start with
         for reach in self.alg_dict['geobam']:
-             FLPE_success=False
              nflpe=np.nanmean(self.alg_dict['geobam'][reach]['n'])
              if self.obs_dict[reach]['nt'] > 0 and (not np.isnan(nflpe)):
-                  print('adjusting flow law parameters for reach',reach)
-                  print(self.obs_dict[reach]['nt'])
+                  #print('adjusting flow law parameters for reach',reach)
+                  #print(self.obs_dict[reach]['nt'])
                   #print(self.alg_dict['geobam'][reach]['a0'])
                   init_params=(np.nanmean(self.alg_dict['geobam'][reach]['n']),np.nanmean(self.alg_dict['geobam'][reach]['a0']))
-                  param_bounds=( (0,np.inf),(-min(self.obs_dict[reach]['dA'])+1,np.inf))
-                  print(init_params)
+                  param_bounds=( (0.001,np.inf),(-min(self.obs_dict[reach]['dA'])+1,np.inf))
+                  #print(init_params)
                   res = optimize.minimize(fun=self.bam_objfun,
                                      x0=init_params,
-                                     args=(self.obs_dict[reach],self.alg_dict['geobam'][reach]['qbar_moi'] ),
+                                     args=(self.obs_dict[reach],self.alg_dict['geobam'][reach]['integrator']['qbar'] ),
                                      bounds=param_bounds )
                   param_est=res.x
-                  print(param_est)
+
+                  #store output
+                  self.alg_dict['geobam'][reach]['integrator']['n']=param_est[0]
+                  self.alg_dict['geobam'][reach]['integrator']['a0']=param_est[1]
+                  self.alg_dict['geobam'][reach]['integrator']['q']=self.bam_flowlaw(param_est,self.obs_dict[reach])
+             else: 
+                  self.alg_dict['geobam'][reach]['integrator']['n']=np.nan
+                  self.alg_dict['geobam'][reach]['integrator']['a0']=np.nan
+                  self.alg_dict['geobam'][reach]['integrator']['q']=np.full( (1,self.obs_dict[reach]['nt']),np.nan)
 
     def bam_objfun(self,params,obs,qbar_target): 
+         qbam=self.bam_flowlaw(params,obs)
+         qbam_bar=np.nanmean(qbam)
+         y=abs(qbam_bar-qbar_target)
+         return y
+
+    def bam_flowlaw(self,params,obs):
          d_x_area=obs['dA']
          reach_width=obs['w']
          reach_slope=obs['S']
@@ -122,6 +136,5 @@ class Integrate:
          #keep this equation exactly how this function is written in riverobs 
          qbam = ((d_x_area+bam_Abar)**(5/3) * reach_width**(-2/3) * \
                 (reach_slope)**(1/2)) / bam_n
-         qbam_bar=np.nanmean(qbam)
-         y=abs(qbam_bar-qbar_target)
-         return y
+         qbam=np.reshape(qbam,(1,len(d_x_area)))
+         return qbam

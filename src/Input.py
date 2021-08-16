@@ -73,10 +73,6 @@ class Input:
     def extract_swot(self):
  
         self.obs_dict={}
-#        self.obs_dict['h']={}
-#        self.obs_dict['w']={}
-#        self.obs_dict['S']={}
-#        self.obs_dict['dA']={}
 
         for reach in self.basin_dict['reach_ids']:
              swotfile=self.swot_dir.joinpath(reach+'_SWOT.nc')
@@ -94,13 +90,21 @@ class Input:
 
              #select observations that are NOT equal to the fill value
              iDelete=np.where(np.isnan(self.obs_dict[reach]['h']))
-             shape_iDelete=np.shape(iDelete)
-             nDelete=shape_iDelete[1]
              self.obs_dict[reach]['h']=np.delete(self.obs_dict[reach]['h'],iDelete,0)
              self.obs_dict[reach]['w']=np.delete(self.obs_dict[reach]['w'],iDelete,0)
              self.obs_dict[reach]['S']=np.delete(self.obs_dict[reach]['S'],iDelete,0)
              self.obs_dict[reach]['dA']=np.delete(self.obs_dict[reach]['dA'],iDelete,0)
 
+             self.obs_dict[reach]['iDelete']=iDelete
+
+             Smin=1.7e-5
+             self.obs_dict[reach]['S'][self.obs_dict[reach]['S']<Smin]=\
+                np.putmask(self.obs_dict[reach]['S'],self.obs_dict[reach]['S']<Smin,Smin)
+
+             #Obs.S[Obs.S<Smin]=putmask(Obs.S,Obs.S<Smin,Smin) #limit slopes to a minimum value
+
+             shape_iDelete=np.shape(iDelete)
+             nDelete=shape_iDelete[1]
              self.obs_dict[reach]['nt'] -= nDelete
 
     def extract_alg(self):

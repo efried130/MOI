@@ -21,7 +21,7 @@ def main():
     integrate = Integrate(input.alg_dict, input.basin_dict, input.sos_dict, input.obs_dict)
     integrate.integrate()
 
-    output = Output(input.basin_dict, OUTPUT_DIR, integrate.integ_dict)
+    output = Output(input.basin_dict, OUTPUT_DIR, integrate.integ_dict, integrate.alg_dict, integrate.obs_dict)
     output.write_output()
 
 if __name__ == "__main__":
