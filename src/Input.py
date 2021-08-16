@@ -32,7 +32,7 @@ class Input:
         Extract reach identifiers and store in basin_dict
     """
 
-    def __init__(self, alg_dir, basin_json, sos_dir):
+    def __init__(self, alg_dir, basin_json, sos_dir, swot_dir):
         """
         Parameters
         ----------
@@ -42,6 +42,8 @@ class Input:
             path to basin JSON file
         sos_dir: Path
             path to SoS data
+        swot_dir: Path
+            path to SWOT data
         """
 
         self.alg_dict = {
@@ -55,6 +57,7 @@ class Input:
         self.alg_dir = alg_dir
         self.sos_dict = {}
         self.sos_dir = sos_dir
+        self.swot_dir = swot_dir
 
     def extract_sos(self):
         """Extracts and stores SoS data in sos_dict.
@@ -66,6 +69,39 @@ class Input:
         """
 
         raise NotImplementedError
+
+    def extract_swot(self):
+ 
+        self.obs_dict={}
+#        self.obs_dict['h']={}
+#        self.obs_dict['w']={}
+#        self.obs_dict['S']={}
+#        self.obs_dict['dA']={}
+
+        for reach in self.basin_dict['reach_ids']:
+             swotfile=self.swot_dir.joinpath(reach+'_SWOT.nc')
+             swot_dataset = Dataset(swotfile)
+
+             self.obs_dict[reach]={}
+             nt=len(swot_dataset.dimensions['nt'])
+             self.obs_dict[reach]['nt']=nt
+             self.obs_dict[reach]['h']=swot_dataset["reach/wse"][0:nt].filled(np.nan)
+             self.obs_dict[reach]['w']=swot_dataset["reach/width"][0:nt].filled(np.nan)
+             self.obs_dict[reach]['S']=swot_dataset["reach/slope2"][0:nt].filled(np.nan)
+             self.obs_dict[reach]['dA']=swot_dataset["reach/d_x_area"][0:nt].filled(np.nan)
+
+             swot_dataset.close()
+
+             #select observations that are NOT equal to the fill value
+             iDelete=np.where(np.isnan(self.obs_dict[reach]['h']))
+             shape_iDelete=np.shape(iDelete)
+             nDelete=shape_iDelete[1]
+             self.obs_dict[reach]['h']=np.delete(self.obs_dict[reach]['h'],iDelete,0)
+             self.obs_dict[reach]['w']=np.delete(self.obs_dict[reach]['w'],iDelete,0)
+             self.obs_dict[reach]['S']=np.delete(self.obs_dict[reach]['S'],iDelete,0)
+             self.obs_dict[reach]['dA']=np.delete(self.obs_dict[reach]['dA'],iDelete,0)
+
+             self.obs_dict[reach]['nt'] -= nDelete
 
     def extract_alg(self):
         """Extracts and stores reach-level FLPE algorithm data in alg_dict.

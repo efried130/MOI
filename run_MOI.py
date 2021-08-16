@@ -10,15 +10,16 @@ from src.Integrate import Integrate
 from src.Output import Output
 
 # Constants
-INPUT_DIR = Path("")
-OUTPUT_DIR = Path("")
+INPUT_DIR = Path("/Users/mtd/OneDrive - The Ohio State University/Analysis/SWOT/Discharge/Confluence/moi_rundir")
+OUTPUT_DIR = Path("/Users/mtd/OneDrive - The Ohio State University/Analysis/SWOT/Discharge/Confluence/moi_outdir")
 
 def main():
-    input = Input(INPUT_DIR / "flpe", INPUT_DIR / "basin.json", INPUT_DIR / "sos")
+    input = Input(INPUT_DIR / "flpe", INPUT_DIR / "basin.json", INPUT_DIR / "sos", INPUT_DIR / "swot" )
     input.extract_alg()
+    input.extract_swot()
 
-    integrate = Integrate(input.alg_dict, input.basin_dict, input.sos_dict)
-    # integrate.integrate()
+    integrate = Integrate(input.alg_dict, input.basin_dict, input.sos_dict, input.obs_dict)
+    integrate.integrate()
 
     output = Output(input.basin_dict, OUTPUT_DIR, integrate.integ_dict)
     output.write_output()
