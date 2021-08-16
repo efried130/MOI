@@ -24,8 +24,6 @@ class Output:
     write_output()
         Write data stored to NetCDF file labelled with basin id
     """
-    
-    FILL_VALUE = -999999999999
 
     def __init__(self, basin_dict, out_dir, integ_dict, alg_dict, obs_dict):
         """
@@ -87,15 +85,19 @@ class Output:
              # Geobam
              gb = out.createGroup("geobam")
              gbq  = out.createVariable("geobam/q", "f8", ("nt",), fill_value=fillvalue)
-             gbq[:] = self.alg_dict['geobam'][reach]['integrator']['q']
+             gbq[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['integrator']['q'], copy=True, nan=fillvalue)
+             
              gb_a0  = out.createVariable("geobam/a0", "f8", fill_value=fillvalue)
-             gb_a0[:] = self.alg_dict['geobam'][reach]['integrator']['a0']
+             gb_a0[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['integrator']['a0'], copy=True, nan=fillvalue)
+             
              gb_n  = out.createVariable("geobam/n", "f8", fill_value=fillvalue)
-             gb_n[:] = self.alg_dict['geobam'][reach]['integrator']['n']
+             gb_n[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['integrator']['n'], copy=True, nan=fillvalue)
+             
              gb_qbar_stage1  = out.createVariable("geobam/qbar_reachScale", "f8", fill_value=fillvalue)
-             gb_qbar_stage1[:] = self.alg_dict['geobam'][reach]['qbar']
+             gb_qbar_stage1[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['qbar'], copy=True, nan=fillvalue)
+             
              gb_qbar_stage2  = out.createVariable("geobam/qbar_basinScale", "f8", fill_value=fillvalue)
-             gb_qbar_stage2[:] = self.alg_dict['geobam'][reach]['integrator']['qbar']
+             gb_qbar_stage2[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
 
              out.close()
 
