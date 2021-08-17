@@ -15,8 +15,6 @@ class Integrate:
         dict of integrator estimate data
     moi_params: ??
         ??
-    stage1_estimates: ??
-        ??
     sos_dict: dict
         dictionary of SoS data
 
@@ -121,11 +119,12 @@ class Integrate:
         #2.2 hivdi
         for reach in self.alg_dict['hivdi']:
              alphaflpe=np.nanmean(self.alg_dict['hivdi'][reach]['alpha'])
+
              if self.obs_dict[reach]['nt'] > 0 and (not np.isnan(alphaflpe)):
                   init_params=(np.nanmean(self.alg_dict['hivdi'][reach]['alpha']), \
                         np.nanmean(self.alg_dict['hivdi'][reach]['beta']),\
                         np.nanmean(self.alg_dict['hivdi'][reach]['a0']))
-                  param_bounds=( (0.001,np.inf),(-np.inf,np.inf),(-min(self.obs_dict[reach]['dA'])+1,np.inf))
+                  param_bounds=( (0.001,np.inf),(-1e2,1e2),(-min(self.obs_dict[reach]['dA'])+1,np.inf))
                   res = optimize.minimize(fun=self.hivdi_objfun,
                                      x0=init_params,
                                      args=(self.obs_dict[reach],self.alg_dict['hivdi'][reach]['integrator']['qbar'] ),
@@ -151,7 +150,7 @@ class Integrate:
                   init_params=(np.nanmean(self.alg_dict['metroman'][reach]['na']), \
                         np.nanmean(self.alg_dict['metroman'][reach]['x1']),\
                         np.nanmean(self.alg_dict['metroman'][reach]['a0']))
-                  param_bounds=( (0.001,np.inf),(-np.inf,np.inf),(-min(self.obs_dict[reach]['dA'])+1,np.inf))
+                  param_bounds=( (0.001,np.inf),(-1e2,1e2),(-min(self.obs_dict[reach]['dA'])+1,np.inf))
                   res = optimize.minimize(fun=self.metroman_objfun,
                                      x0=init_params,
                                      args=(self.obs_dict[reach],self.alg_dict['metroman'][reach]['integrator']['qbar'] ),
@@ -176,7 +175,7 @@ class Integrate:
                   init_params=(np.nanmean(self.alg_dict['momma'][reach]['B']), \
                         np.nanmean(self.alg_dict['momma'][reach]['H']))
                         
-                  param_bounds=( (0.001,np.inf),(0.001,np.inf))
+                  param_bounds=( (0.001,np.min(self.obs_dict[reach]['h'])-0.001),(0.001,np.inf))
 
                   aux_var=self.alg_dict['momma'][reach]['Save']
  
@@ -264,6 +263,12 @@ class Integrate:
          q=self.momma_flowlaw(params,obs,aux_var)
          qbar=np.nanmean(q)
          y=abs(qbar-qbar_target)
+
+         if np.any(np.isinf(q)):
+            # if the search sets H<B then the flow law returns inf
+            # in that case return an arbitrary very large number
+            y=3e38
+
          return y
 
     def momma_flowlaw(self,params,obs,aux_var):
@@ -279,19 +284,22 @@ class Integrate:
 
          momma_q=np.empty( (obs['nt'],)) 
 
-         for t in range(obs['nt']):
-              log_factor = np.log10((momma_H-momma_B)/(reach_height[t]-momma_B))
+         if momma_H <= momma_B:
+              momma_q=np.inf
+         else:
+              for t in range(obs['nt']):
+                   log_factor = np.log10((momma_H-momma_B)/(reach_height[t]-momma_B))
 
-              if reach_height[t] <= momma_H:
-                  momma_n = momma_nb*(1+log_factor)
-                  log_check = log_factor > -1
-              else:
-                  momma_n = momma_nb*(1-log_factor)
-                  log_check = log_factor < 1
+                   if reach_height[t] <= momma_H:
+                       momma_n = momma_nb*(1+log_factor)
+                       log_check = log_factor > -1
+                   else:
+                       momma_n = momma_nb*(1-log_factor)
+                       log_check = log_factor < 1
 
-              momma_q[t] = (
-                  ((reach_height[t] - momma_B)*(momma_r/(1+momma_r)))**(5/3) *
-                  reach_width[t] * reach_slope[t]**(1/2)) / momma_n
+                   momma_q[t] = (
+                       ((reach_height[t] - momma_B)*(momma_r/(1+momma_r)))**(5/3) *
+                       reach_width[t] * reach_slope[t]**(1/2)) / momma_n
 
-         momma_q=np.reshape(momma_q,(1,len(reach_height)))
+              momma_q=np.reshape(momma_q,(1,len(reach_height)))
          return momma_q
