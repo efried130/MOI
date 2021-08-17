@@ -65,11 +65,17 @@ class Output:
 
              self.obs_dict[reach]['nt'] += nDelete
 
-             #print(self.alg_dict['geobam'][reach]['integrator']['q'])
-             #print(self.alg_dict['geobam'][reach]['integrator']['q'].shape)
-
              self.alg_dict['geobam'][reach]['integrator']['q']=np.insert( \
                    self.alg_dict['geobam'][reach]['integrator']['q'],iInsert,fillvalue,1)
+
+             self.alg_dict['hivdi'][reach]['integrator']['q']=np.insert( \
+                   self.alg_dict['hivdi'][reach]['integrator']['q'],iInsert,fillvalue,1)
+
+             self.alg_dict['metroman'][reach]['integrator']['q']=np.insert( \
+                   self.alg_dict['metroman'][reach]['integrator']['q'],iInsert,fillvalue,1)
+
+             self.alg_dict['momma'][reach]['integrator']['q']=np.insert( \
+                   self.alg_dict['momma'][reach]['integrator']['q'],iInsert,fillvalue,1)
 
              # NetCDF file creation
              out_file = self.out_dir / f"{reach}_integrator.nc"
@@ -99,61 +105,64 @@ class Output:
              gb_qbar_stage2  = out.createVariable("geobam/qbar_basinScale", "f8", fill_value=fillvalue)
              gb_qbar_stage2[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
 
+             # hivdi
+             hv = out.createGroup("hivdi")
+             hvq  = out.createVariable("hivdi/q", "f8", ("nt",), fill_value=fillvalue)
+             hvq[:] = np.nan_to_num(self.alg_dict['hivdi'][reach]['integrator']['q'], copy=True, nan=fillvalue)
+
+             hv_Abar = out.createVariable("hivdi/Abar", "f8", fill_value=fillvalue)
+             hv_Abar[:] = np.nan_to_num(self.alg_dict['hivdi'][reach]['integrator']['Abar'], copy=True, nan=fillvalue)
+
+             hv_alpha = out.createVariable("hivdi/alpha", "f8", fill_value=fillvalue)
+             hv_alpha[:] = np.nan_to_num(self.alg_dict['hivdi'][reach]['integrator']['alpha'], copy=True, nan=fillvalue)
+
+             hv_beta = out.createVariable("hivdi/beta", "f8", fill_value=fillvalue)
+             hv_beta[:] = np.nan_to_num(self.alg_dict['hivdi'][reach]['integrator']['beta'], copy=True, nan=fillvalue)
+
+             hv_qbar_stage1  = out.createVariable("hivdi/qbar_reachScale", "f8", fill_value=fillvalue)
+             hv_qbar_stage1[:] = np.nan_to_num(self.alg_dict['hivdi'][reach]['qbar'], copy=True, nan=fillvalue)
+             
+             hv_qbar_stage2  = out.createVariable("hivdi/qbar_basinScale", "f8", fill_value=fillvalue)
+             hv_qbar_stage2[:] = np.nan_to_num(self.alg_dict['hivdi'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
+
+             # metroman
+             mm = out.createGroup("metroman")
+             mmq  = out.createVariable("metroman/q", "f8", ("nt",), fill_value=fillvalue)
+             mmq[:] = np.nan_to_num(self.alg_dict['metroman'][reach]['integrator']['q'], copy=True, nan=fillvalue)
+
+             mm_Abar = out.createVariable("metroman/Abar", "f8", fill_value=fillvalue)
+             mm_Abar[:] = np.nan_to_num(self.alg_dict['metroman'][reach]['integrator']['a0'], copy=True, nan=fillvalue)
+
+             mm_na = out.createVariable("metroman/na", "f8", fill_value=fillvalue)
+             mm_na[:] = np.nan_to_num(self.alg_dict['metroman'][reach]['integrator']['na'], copy=True, nan=fillvalue)
+
+             mm_x1 = out.createVariable("metroman/x1", "f8", fill_value=fillvalue)
+             mm_x1[:] = np.nan_to_num(self.alg_dict['metroman'][reach]['integrator']['x1'], copy=True, nan=fillvalue)
+
+             mm_qbar_stage1  = out.createVariable("metroman/qbar_reachScale", "f8", fill_value=fillvalue)
+             mm_qbar_stage1[:] = np.nan_to_num(self.alg_dict['metroman'][reach]['qbar'], copy=True, nan=fillvalue)
+             
+             mm_qbar_stage2  = out.createVariable("metroman/qbar_basinScale", "f8", fill_value=fillvalue)
+             mm_qbar_stage2[:] = np.nan_to_num(self.alg_dict['metroman'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
+
+             # momma
+             mo = out.createGroup("momma")
+             moq  = out.createVariable("momma/q", "f8", ("nt",), fill_value=fillvalue)
+             moq[:] = np.nan_to_num(self.alg_dict['momma'][reach]['integrator']['q'], copy=True, nan=fillvalue)
+
+             mo_B = out.createVariable("momma/B", "f8", fill_value=fillvalue)
+             mo_B[:] = np.nan_to_num(self.alg_dict['momma'][reach]['integrator']['B'], copy=True, nan=fillvalue)
+
+             mo_H = out.createVariable("momma/H", "f8", fill_value=fillvalue)
+             mo_H[:] = np.nan_to_num(self.alg_dict['momma'][reach]['integrator']['H'], copy=True, nan=fillvalue)
+
+             mo_Save = out.createVariable("momma/Save", "f8", fill_value=fillvalue)
+             mo_Save[:] = np.nan_to_num(self.alg_dict['momma'][reach]['integrator']['Save'], copy=True, nan=fillvalue)
+
+             mo_qbar_stage1  = out.createVariable("momma/qbar_reachScale", "f8", fill_value=fillvalue)
+             mo_qbar_stage1[:] = np.nan_to_num(self.alg_dict['momma'][reach]['qbar'], copy=True, nan=fillvalue)
+             
+             mo_qbar_stage2  = out.createVariable("momma/qbar_basinScale", "f8", fill_value=fillvalue)
+             mo_qbar_stage2[:] = np.nan_to_num(self.alg_dict['momma'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
+
              out.close()
-
-        '''
-        
-
-        # out.createDimension("nflpe", len(self.stage_estimate["flpe"].keys()))
-        # nf = out.createVariable("nflpe", "i4", ("nflpe",))
-        # nf.units = "algorithms"
-        # nf.long_name = "number of reach-level FLPE algorithms"
-        # nf[:] = range(1, len(self.stage_estimate["flpe"].keys()) + 1)    ## TODO Figure out time series and FLPE storage
-
-        # Data
-        # reach identifiers
-        reach_id_v = out.createVariable("reach_id", "i8", ("nr",))
-        reach_id_v.long_name = "reach ID from prior river database"
-        reach_id_v.comment = "Unique reach identifier from the prior river " \
-            + "database. The format of the identifier is CBBBBBRRRRT, where " \
-            + "C=continent, B=basin, R=reach, T=type."
-        reach_id_v[:] = np.array(self.basin_dict["reach_ids"], dtype=int)
-
-        # pre integrator mean discharge
-        pre_q_var = out.createVariable("pre_Qmean", "f4", ("nr",),
-            fill_value=self.FILL_VALUE)
-        pre_q_var[:] = np.random.uniform(size=len(nr[:]))
-
-        # mean discharge
-        q_var = out.createVariable("Qmean", "f4", ("nr",),
-            fill_value=self.FILL_VALUE)
-        # q_var[:] = self.stage_estimate["q_mean"][:]    ## TODO Store processing
-        q_var[:] = np.random.uniform(size=len(nr[:]))
-
-        # FLPE results
-        gb_var = out.createVariable("geobam", "f4", ("nr"),
-            fill_value=self.FILL_VALUE)
-        # gb_var[:] = self.stage_estimate["flpe"]["geobam"]    ## TODO Store processing
-        gb_var[:] = np.random.uniform(size=len(nr[:]))
-
-        hv_var = out.createVariable("hivdi", "f4", ("nr"),
-            fill_value=self.FILL_VALUE)
-        # hv_var[:] = self.stage_estimate["flpe"]["hivdi"]    ## TODO Store processing
-        hv_var[:] = np.random.uniform(size=len(nr[:]))
-
-        mm_var = out.createVariable("metroman", "f4", ("nr"),
-            fill_value=self.FILL_VALUE)
-        # mm_var[:] = self.stage_estimate["flpe"]["metroman"]    ## TODO Store processing
-        mm_var[:] = np.random.uniform(size=len(nr[:]))
-
-        mo_var = out.createVariable("momma", "f4", ("nr"),
-            fill_value=self.FILL_VALUE)
-        # mo_var[:] = self.stage_estimate["flpe"]["momma"]    ## TODO Store processing
-        mo_var[:] = np.random.uniform(size=len(nr[:]))
-
-        sd_var = out.createVariable("sad", "f4", ("nr"),
-            fill_value=self.FILL_VALUE)
-        # sd_var[:] = self.stage_estimate["flpe"]["sad"]    ## TODO Store processing
-        sd_var[:] = np.random.uniform(size=len(nr[:]))
-
-        '''

@@ -1,6 +1,7 @@
 # Standard imports
 from glob import glob
 import json
+from pathlib import Path
 
 # Third-party imports
 from netCDF4 import Dataset
@@ -120,13 +121,15 @@ class Input:
 
         reach_ids = self.basin_dict["reach_ids"]
         for r_id in reach_ids:
+
             gb_file = self.alg_dir / "geobam" / f"{r_id}_geobam.nc"
             hv_file = self.alg_dir / "hivdi" / f"{r_id}_hivdi.nc"
             mo_file = self.alg_dir / "momma" / f"{r_id}_momma.nc"
             sd_file = self.alg_dir / "sad" / f"{r_id}_sad.nc"      ## TODO wait on SAD results
-            mm_file = glob(str(self.alg_dir / "metroman" / f"*{r_id}*_metroman.nc"))    ## TODO hold until results are available
+            mm_file = glob(str(self.alg_dir / "metroman" / f"*{r_id}*_metroman.nc"))    
+            mm_file = Path(mm_file[0]) 
 
-            if gb_file.exists() and hv_file.exists() and mo_file.exists():    ## TODO add in SAD and MetroMan files
+            if gb_file.exists() and hv_file.exists() and mm_file.exists() and mo_file.exists():    ## TODO add in SAD files
 
                 self.__extract_valid(r_id, gb_file, hv_file, mo_file, sd_file, mm_file)
             else:
@@ -134,8 +137,6 @@ class Input:
 
     def __extract_valid(self, r_id, gb_file, hv_file, mo_file, sd_file, mm_file):
         """ Extract valid data from the output of each reach-level FLPE alg.
-
-        TODO: Metroman results
 
         Parameters
         ----------
@@ -166,7 +167,8 @@ class Input:
         hv = Dataset(hv_file, 'r', format="NETCDF4")
         self.alg_dict["hivdi"][r_id] = {
             "q" : hv["reach"]["Q"][:].filled(np.nan),
-            # "n" : hv["reach"]["alpha"][:].filled(np.nan),  ## TODO locate n
+            "alpha" : hv["reach"]["alpha"][:].filled(np.nan),  
+            "beta" : hv["reach"]["beta"][:].filled(np.nan),  
             "a0" : hv["reach"]["A0"][:].filled(np.nan)
         }
         hv.close()
@@ -175,8 +177,9 @@ class Input:
         mo = Dataset(mo_file, 'r', format="NETCDF4")
         self.alg_dict["momma"][r_id] = {
             "q" : mo["Q"][:].filled(np.nan),
-            "n" : mo["n"][:].filled(np.nan)
-            # "a0" : ...                                    ## TODO locate or calculate A0
+            "B" : mo["zero_flow_stage"][:].filled(np.nan),
+            "H" : mo["bankfull_stage"][:].filled(np.nan),                                  
+            "Save" : np.nanmean(mo["slope"][:].filled(np.nan))
         }
         mo.close()
 
@@ -189,15 +192,16 @@ class Input:
         # }
         # sd.close()
 
-        # metroman    ## TODO hold until results are available
-        # mm = Dataset(mm_file, 'r', format="NETCDF4")
-        # index = np.where(mm["reach_id"][:] == r_id)
-        # self.alg_dict["metroman"][r_id] = {
-        #     "q" : mm["allq"][index].filled(np.nan),
-        #     "n" : mm["nahat"][index].filled(np.nan),
-        #     "a0" : mm["A0hat"][index].filled(np.nan)
-        # }
-        # mm.close()
+        # metroman    
+        mm = Dataset(mm_file, 'r', format="NETCDF4")
+        index = np.where(mm["reach_id"][:] == int(r_id))
+        self.alg_dict["metroman"][r_id] = {
+             "q" : mm["allq"][index].filled(np.nan),
+             "na" : mm["nahat"][index].filled(np.nan),
+             "x1" : mm["x1hat"][index].filled(np.nan),
+             "a0" : mm["A0hat"][index].filled(np.nan)
+        }
+        mm.close()
 
     def __indicate_no_data(self, r_id):
         """Indicate no data is available for the reach.
@@ -219,15 +223,17 @@ class Input:
         # hivdi
         self.alg_dict["hivdi"][r_id] = {
             "q" : np.nan,
-            # "n" : np.nan,  ## TODO locate n
+            "alpha" : np.nan,  
+            "beta" : np.nan,  
             "a0" : np.nan
         }
 
         # momma
         self.alg_dict["momma"][r_id] = {
             "q" : np.nan,
-            "n" : np.nan
-            # "a0" : np.nan                                 ## TODO locate or calculate A0
+            "B" : np.nan,
+            "H" : np.nan,
+            "Save" : np.nan
         }
 
         # sad
@@ -237,12 +243,13 @@ class Input:
         #     "a0" : np.nan
         # }
 
-        # MetroMan    ## TODO hold until results are available
-        # self.alg_dict["metroman"][r_id] = {
-        #     "q" : np.nan,
-        #     "n" : np.nan,
-        #     "a0" : np.nan
-        # }
+        # MetroMan    
+        self.alg_dict["metroman"][r_id] = {
+             "q" : np.nan,
+             "na" : np.nan,
+             "x1" : np.nan,
+             "a0" : np.nan
+        }
 
     def __get_gb_data(self, gb, group, logged):
         """Return geoBAM data as a numpy array.
