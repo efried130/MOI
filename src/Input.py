@@ -1,7 +1,7 @@
 # Standard imports
 from glob import glob
-import json
 from pathlib import Path
+import warnings
 
 # Third-party imports
 from netCDF4 import Dataset
@@ -22,7 +22,6 @@ class Input:
         dictionary of SoS data
     sos_dir: Path
         path to SoS data    
-
     Methods
     -------
     extract_alg()
@@ -33,18 +32,18 @@ class Input:
         Extract reach identifiers and store in basin_dict
     """
 
-    def __init__(self, alg_dir, basin_json, sos_dir, swot_dir):
+    def __init__(self, alg_dir, sos_dir, swot_dir, basin_data):
         """
         Parameters
         ----------
         alg_dir: Path
             path to reach-level FLPE algorithm data
-        basin_json: Path
-            path to basin JSON file
         sos_dir: Path
             path to SoS data
         swot_dir: Path
             path to SWOT data
+        basin_data: dict
+            dict of reach_ids and SoS file needed to process entire basin of data
         """
 
         self.alg_dict = {
@@ -54,7 +53,7 @@ class Input:
             "momma": {},
             "sad": {}
         }
-        self.basin_dict = self.__get_ids(basin_json)
+        self.basin_dict = basin_data
         self.alg_dir = alg_dir
         self.sos_dict = {}
         self.sos_dir = sos_dir
@@ -62,7 +61,7 @@ class Input:
 
     def extract_sos(self):
         """Extracts and stores SoS data in sos_dict.
-
+        
         TODO: Implement
         
         Parameters
@@ -112,10 +111,6 @@ class Input:
         """Extracts and stores reach-level FLPE algorithm data in alg_dict.
 
         TODO: 
-        - Consider storage of basin-level data in a DataFrame if possible.
-        - Locate HiVDI n parameter.
-        - Locate MOMMA A0 parameter.
-        - Add in MetroMan results once available.
         - Add in SAD results once available.
         """
 
@@ -137,7 +132,6 @@ class Input:
 
     def __extract_valid(self, r_id, gb_file, hv_file, mo_file, sd_file, mm_file):
         """ Extract valid data from the output of each reach-level FLPE alg.
-
         Parameters
         ----------
         r_id: str
@@ -175,12 +169,14 @@ class Input:
 
         # momma
         mo = Dataset(mo_file, 'r', format="NETCDF4")
-        self.alg_dict["momma"][r_id] = {
-            "q" : mo["Q"][:].filled(np.nan),
-            "B" : mo["zero_flow_stage"][:].filled(np.nan),
-            "H" : mo["bankfull_stage"][:].filled(np.nan),                                  
-            "Save" : np.nanmean(mo["slope"][:].filled(np.nan))
-        }
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            self.alg_dict["momma"][r_id] = {
+                "q" : mo["Q"][:].filled(np.nan),
+                "B" : mo["zero_flow_stage"][:].filled(np.nan),
+                "H" : mo["bankfull_stage"][:].filled(np.nan),                                  
+                "Save" : np.nanmean(mo["slope"][:].filled(np.nan))
+            }
         mo.close()
 
         # sad
@@ -205,9 +201,7 @@ class Input:
 
     def __indicate_no_data(self, r_id):
         """Indicate no data is available for the reach.
-
         TODO: Metroman results
-
         Parameters
         ----------
         r_id: str
@@ -269,26 +263,9 @@ class Input:
         chain3 = gb[group]["mean_chain3"][:].filled(np.nan)
         chains = np.vstack((chain1, chain2, chain3))
         
-        if logged:
-            return np.exp(np.nanmean(chains, axis=0))
-        else:
-            return np.nanmean(chains, axis=0)
-
-    def __get_ids(self, basin_json):
-        """Extract reach identifiers and return dictionary.
-        
-        Dictionary is organized with a key of reach identifier and a value of
-        SoS file as a Path object.
-        """
-
-        # index = int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX"))
-        index = 3
-        with open(basin_json) as json_file:
-            data = json.load(json_file)
-
-        return {
-            "basin_id" : int(data[index]["basin_id"]),    ## TODO
-            "reach_ids" : data[index]["reach_id"],    ## TODO
-            "sos" : data[index]["sos"],
-            "sword": data[index]["sword"]
-        }
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            if logged:
+                return np.exp(np.nanmean(chains, axis=0))
+            else:
+                return np.nanmean(chains, axis=0)

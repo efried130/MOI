@@ -2,7 +2,10 @@
 """
 
 # Standard imports
+import json
+import os
 from pathlib import Path
+import sys
 
 # Local imports
 from src.Input import Input
@@ -13,8 +16,34 @@ from src.Output import Output
 INPUT_DIR = Path("/Users/mtd/OneDrive - The Ohio State University/Analysis/SWOT/Discharge/Confluence/moi_rundir")
 OUTPUT_DIR = Path("/Users/mtd/OneDrive - The Ohio State University/Analysis/SWOT/Discharge/Confluence/moi_outdir")
 
+def get_basin_data(basin_json):
+    """Extract reach identifiers and return dictionary.
+    
+    Dictionary is organized with a key of reach identifier and a value of
+    SoS file as a Path object.
+    """
+
+    # index = int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX"))
+    index = 3
+    with open(basin_json) as json_file:
+        data = json.load(json_file)
+
+    return {
+        "basin_id" : int(data[index]["basin_id"]),    ## TODO
+        "reach_ids" : data[index]["reach_id"],    ## TODO
+        "sos" : data[index]["sos"],
+        "sword": data[index]["sword"]
+    }
+
 def main():
-    input = Input(INPUT_DIR / "flpe", INPUT_DIR / "basin.json", INPUT_DIR / "sos", INPUT_DIR / "swot" )
+
+    try:
+        basin_json = INPUT_DIR.joinpath(sys.argv[1])
+    except IndexError:
+        basin_json = INPUT_DIR.joinpath("basin.json") 
+    basin_data = get_basin_data(basin_json)
+
+    input = Input(INPUT_DIR / "flpe", INPUT_DIR / "sos", INPUT_DIR / "swot", basin_data)
     input.extract_alg()
     input.extract_swot()
 
