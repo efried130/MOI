@@ -4,14 +4,7 @@ MOI serves as the integrator module to the Confluence workflow. It extracts reac
 
 TO DO:
 - Implement Input.extract_sos()
-- Modify Input.extract_alg() to include MetroMan and SAD results, locate HiVDI n parameter, locate MOMMA A0 parameter.
-- Integrate.moi_params initialization
-- Integrate.stage1_estimate initialization
-- Integrate.stage2_estimate addition ??
-- Integrate.get_pre_mean_q implementation
-- Integrate.integrate implementation
-- Output.write_output: Add optional attribute metadata, decide on how to store output of FLPE integration
-
+- Modify Input.extract_alg() to include SAD results
 
 # installation
 
