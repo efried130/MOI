@@ -14,6 +14,7 @@ from src.Output import Output
 
 # Constants
 INPUT_DIR = Path("/Users/mtd/OneDrive - The Ohio State University/Analysis/SWOT/Discharge/Confluence/moi_rundir")
+FLPE_DIR = Path("ENTER PATH")
 OUTPUT_DIR = Path("/Users/mtd/OneDrive - The Ohio State University/Analysis/SWOT/Discharge/Confluence/moi_outdir")
 
 def get_basin_data(basin_json):
@@ -43,7 +44,7 @@ def main():
         basin_json = INPUT_DIR.joinpath("basin.json") 
     basin_data = get_basin_data(basin_json)
 
-    input = Input(INPUT_DIR / "flpe", INPUT_DIR / "sos", INPUT_DIR / "swot", basin_data)
+    input = Input(FLPE_DIR, INPUT_DIR / "sos", INPUT_DIR / "swot", basin_data)
     input.extract_alg()
     input.extract_swot()
 
