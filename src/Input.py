@@ -108,11 +108,7 @@ class Input:
              self.obs_dict[reach]['nt'] -= nDelete
 
     def extract_alg(self):
-        """Extracts and stores reach-level FLPE algorithm data in alg_dict.
-
-        TODO: 
-        - Add in SAD results once available.
-        """
+        """Extracts and stores reach-level FLPE algorithm data in alg_dict."""
 
         reach_ids = self.basin_dict["reach_ids"]
         for r_id in reach_ids:
@@ -120,12 +116,11 @@ class Input:
             gb_file = self.alg_dir / "geobam" / f"{r_id}_geobam.nc"
             hv_file = self.alg_dir / "hivdi" / f"{r_id}_hivdi.nc"
             mo_file = self.alg_dir / "momma" / f"{r_id}_momma.nc"
-            sd_file = self.alg_dir / "sad" / f"{r_id}_sad.nc"      ## TODO wait on SAD results
+            sd_file = self.alg_dir / "sad" / f"{r_id}_sad.nc"
             mm_file = glob(str(self.alg_dir / "metroman" / f"*{r_id}*_metroman.nc"))    
             mm_file = Path(mm_file[0]) 
 
-            if gb_file.exists() and hv_file.exists() and mm_file.exists() and mo_file.exists():    ## TODO add in SAD files
-
+            if gb_file.exists() and hv_file.exists() and mm_file.exists() and mo_file.exists() and sd_file.exists():
                 self.__extract_valid(r_id, gb_file, hv_file, mo_file, sd_file, mm_file)
             else:
                 self.__indicate_no_data(r_id)
@@ -180,13 +175,13 @@ class Input:
         mo.close()
 
         # sad
-        # sd = Dataset(sd_file, 'r', format="NETCDF4")
-        # self.alg_dict["sad"][r_id] = {
-        #     "q" : sd["Qa"][:].filled(np.nan),
-        #     "n" : sd["n"][:].filled(np.nan),
-        #     "a0" : sd["A0"][:].filled(np.nan)
-        # }
-        # sd.close()
+        sd = Dataset(sd_file, 'r', format="NETCDF4")
+        self.alg_dict["sad"][r_id] = {
+            "q" : sd["Qa"][:].filled(np.nan),
+            "n" : sd["n"][:].filled(np.nan),
+            "a0" : sd["A0"][:].filled(np.nan)
+        }
+        sd.close()
 
         # metroman    
         mm = Dataset(mm_file, 'r', format="NETCDF4")
@@ -231,11 +226,11 @@ class Input:
         }
 
         # sad
-        # self.alg_dict["sad"][r_id] = {
-        #     "q" : np.nan,
-        #     "n" : np.nan,
-        #     "a0" : np.nan
-        # }
+        self.alg_dict["sad"][r_id] = {
+            "q" : np.nan,
+            "n" : np.nan,
+            "a0" : np.nan
+        }
 
         # MetroMan    
         self.alg_dict["metroman"][r_id] = {
