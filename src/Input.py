@@ -51,7 +51,8 @@ class Input:
             "hivdi": {},
             "metroman": {},
             "momma": {},
-            "sad": {}
+            "sad": {},
+            "sic4dvar": {}
         }
         self.basin_dict = basin_data
         self.alg_dir = alg_dir
@@ -117,15 +118,18 @@ class Input:
             hv_file = self.alg_dir / "hivdi" / f"{r_id}_hivdi.nc"
             mo_file = self.alg_dir / "momma" / f"{r_id}_momma.nc"
             sd_file = self.alg_dir / "sad" / f"{r_id}_sad.nc"
+            sv_file = self.alg_dir / "sic4dvar" / f"{r_id}_sic4dvar.nc"
             mm_file = glob(str(self.alg_dir / "metroman" / f"*{r_id}*_metroman.nc"))    
             mm_file = Path(mm_file[0]) 
 
-            if gb_file.exists() and hv_file.exists() and mm_file.exists() and mo_file.exists() and sd_file.exists():
-                self.__extract_valid(r_id, gb_file, hv_file, mo_file, sd_file, mm_file)
+            if gb_file.exists() and hv_file.exists() and mm_file.exists() \
+                and mo_file.exists() and sd_file.exists() and sv_file.exists():
+
+                self.__extract_valid(r_id, gb_file, hv_file, mo_file, sd_file, mm_file, sv_file)
             else:
                 self.__indicate_no_data(r_id)
 
-    def __extract_valid(self, r_id, gb_file, hv_file, mo_file, sd_file, mm_file):
+    def __extract_valid(self, r_id, gb_file, hv_file, mo_file, sd_file, mm_file, sv_file):
         """ Extract valid data from the output of each reach-level FLPE alg.
         Parameters
         ----------
@@ -141,6 +145,8 @@ class Input:
             Path to SAD results file
         mm_file: Path
             Path to MetroMan results file
+        sv_file: Path
+            Path to SIC4DVar results file
         """
 
         # geobam
@@ -194,6 +200,16 @@ class Input:
         }
         mm.close()
 
+        # sic4dvar
+        sv = Dataset(sv_file, 'r', format="NETCDF4")
+        self.alg_dict["sic4dvar"][r_id] = {
+            "q31": sv["Qalgo31"][:].filled(np.nan),
+            "q5": sv["Qalgo5"][:].filled(np.nan),
+            "n": sv["n"][:].filled(np.nan),
+            "a0": sv["A0"][:].filled(np.nan)
+        }
+        sv.close()
+
     def __indicate_no_data(self, r_id):
         """Indicate no data is available for the reach.
         TODO: Metroman results
@@ -232,12 +248,20 @@ class Input:
             "a0" : np.nan
         }
 
-        # MetroMan    
+        # metroman    
         self.alg_dict["metroman"][r_id] = {
              "q" : np.nan,
              "na" : np.nan,
              "x1" : np.nan,
              "a0" : np.nan
+        }
+
+        # sic4dvar
+        self.alg_dict["sic4dvar"][r_id] = {
+            "q31": np.nan,
+            "q5": np.nan,
+            "n": np.nan,
+            "a0": np.nan
         }
 
     def __get_gb_data(self, gb, group, logged):
