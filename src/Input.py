@@ -203,7 +203,8 @@ class Input:
         # sic4dvar
         sv = Dataset(sv_file, 'r', format="NETCDF4")
         self.alg_dict["sic4dvar"][r_id] = {
-            "q31": sv["Qalgo31"][:].filled(np.nan),
+            #"q31": sv["Qalgo31"][:].filled(np.nan),#unclear which of these to use
+            "q": sv["Qalgo31"][:].filled(np.nan),
             "q5": sv["Qalgo5"][:].filled(np.nan),
             "n": sv["n"][:].filled(np.nan),
             "a0": sv["A0"][:].filled(np.nan)

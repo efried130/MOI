@@ -14,7 +14,7 @@ from src.Output import Output
 
 # Constants
 INPUT_DIR = Path("/Users/mtd/OneDrive - The Ohio State University/Analysis/SWOT/Discharge/Confluence/moi_rundir")
-FLPE_DIR = Path("ENTER PATH")
+FLPE_DIR = Path("/Users/mtd/OneDrive - The Ohio State University/Analysis/SWOT/Discharge/Confluence/moi_rundir/flpe")
 OUTPUT_DIR = Path("/Users/mtd/OneDrive - The Ohio State University/Analysis/SWOT/Discharge/Confluence/moi_outdir")
 
 def get_basin_data(basin_json):

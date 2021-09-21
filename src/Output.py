@@ -77,6 +77,12 @@ class Output:
              self.alg_dict['momma'][reach]['integrator']['q']=np.insert( \
                    self.alg_dict['momma'][reach]['integrator']['q'],iInsert,fillvalue,1)
 
+             self.alg_dict['sad'][reach]['integrator']['q']=np.insert( \
+                   self.alg_dict['sad'][reach]['integrator']['q'],iInsert,fillvalue,1)
+
+             self.alg_dict['sic4dvar'][reach]['integrator']['q']=np.insert( \
+                   self.alg_dict['sic4dvar'][reach]['integrator']['q'],iInsert,fillvalue,1)
+
              # NetCDF file creation
              out_file = self.out_dir / f"{reach}_integrator.nc"
              out = Dataset(out_file, 'w', format="NETCDF4")
@@ -164,5 +170,39 @@ class Output:
              
              mo_qbar_stage2  = out.createVariable("momma/qbar_basinScale", "f8", fill_value=fillvalue)
              mo_qbar_stage2[:] = np.nan_to_num(self.alg_dict['momma'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
+
+             #sad
+             sad=out.createGroup("sad")
+             sadq = out.createVariable("sad/q", "f8", ("nt",), fill_value=fillvalue)
+             sadq[:] = np.nan_to_num(self.alg_dict['sad'][reach]['integrator']['q'], copy=True, nan=fillvalue)
+
+             sad_n = out.createVariable("sad/n", "f8", fill_value=fillvalue)
+             sad_n[:] = np.nan_to_num(self.alg_dict['sad'][reach]['integrator']['n'], copy=True, nan=fillvalue)
+
+             sad_a0 = out.createVariable("sad/a0", "f8", fill_value=fillvalue)
+             sad_a0[:] = np.nan_to_num(self.alg_dict['sad'][reach]['integrator']['a0'], copy=True, nan=fillvalue)
+
+             sad_qbar_stage1  = out.createVariable("sad/qbar_reachScale", "f8", fill_value=fillvalue)
+             sad_qbar_stage1[:] = np.nan_to_num(self.alg_dict['sad'][reach]['qbar'], copy=True, nan=fillvalue)
+             
+             sad_qbar_stage2  = out.createVariable("sad/qbar_basinScale", "f8", fill_value=fillvalue)
+             sad_qbar_stage2[:] = np.nan_to_num(self.alg_dict['sad'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
+
+             #sic4dvar
+             sic4dvar=out.createGroup("sic4dvar")
+             sic4dvarq = out.createVariable("sic4dvar/q", "f8", ("nt",), fill_value=fillvalue)
+             sic4dvarq[:] = np.nan_to_num(self.alg_dict['sic4dvar'][reach]['integrator']['q'], copy=True, nan=fillvalue)
+
+             sic4dvar_n = out.createVariable("sic4dvar/n", "f8", fill_value=fillvalue)
+             sic4dvar_n[:] = np.nan_to_num(self.alg_dict['sic4dvar'][reach]['integrator']['n'], copy=True, nan=fillvalue)
+
+             sic4dvar_a0 = out.createVariable("sic4dvar/a0", "f8", fill_value=fillvalue)
+             sic4dvar_a0[:] = np.nan_to_num(self.alg_dict['sic4dvar'][reach]['integrator']['a0'], copy=True, nan=fillvalue)
+
+             sic4dvar_qbar_stage1  = out.createVariable("sic4dvar/qbar_reachScale", "f8", fill_value=fillvalue)
+             sic4dvar_qbar_stage1[:] = np.nan_to_num(self.alg_dict['sic4dvar'][reach]['qbar'], copy=True, nan=fillvalue)
+             
+             sic4dvar_qbar_stage2  = out.createVariable("sic4dvar/qbar_basinScale", "f8", fill_value=fillvalue)
+             sic4dvar_qbar_stage2[:] = np.nan_to_num(self.alg_dict['sic4dvar'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
 
              out.close()

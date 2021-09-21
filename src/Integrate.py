@@ -1,4 +1,4 @@
-#Standard imports
+#aStandard imports
 import warnings
 
 # Third-party imports
@@ -209,6 +209,64 @@ class Integrate:
                     self.alg_dict['momma'][reach]['integrator']['Save']=np.nan
                     self.alg_dict['momma'][reach]['integrator']['q']=np.full( (1,self.obs_dict[reach]['nt']),np.nan)
 
+          #2.5 SAD
+          for reach in self.alg_dict['sad']:
+               with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=RuntimeWarning)
+                    nflpe=np.nanmean(self.alg_dict['sad'][reach]['n'])
+               if self.obs_dict[reach]['nt'] > 0 and (not np.isnan(nflpe)):
+                    with warnings.catch_warnings():
+                         warnings.simplefilter("ignore", category=RuntimeWarning)
+                         init_params=(np.nanmean(self.alg_dict['sad'][reach]['n']), \
+                              np.nanmean(self.alg_dict['sad'][reach]['a0']))
+
+                    param_bounds=( (0.001,np.inf),(-min(self.obs_dict[reach]['dA'])+1,np.inf))
+
+                    res = optimize.minimize(fun=self.sad_objfun,
+                                        x0=init_params,
+                                        args=(self.obs_dict[reach],self.alg_dict['sad'][reach]['integrator']['qbar'] ),
+                                        bounds=param_bounds )
+
+                    param_est=res.x
+
+                    #store output
+                    self.alg_dict['sad'][reach]['integrator']['n']=param_est[0]
+                    self.alg_dict['sad'][reach]['integrator']['a0']=param_est[1]
+                    self.alg_dict['sad'][reach]['integrator']['q']=self.sad_flowlaw(param_est,self.obs_dict[reach])
+               else: 
+                    self.alg_dict['sad'][reach]['integrator']['n']=np.nan
+                    self.alg_dict['sad'][reach]['integrator']['a0']=np.nan
+                    self.alg_dict['sad'][reach]['integrator']['q']=np.full( (1,self.obs_dict[reach]['nt']),np.nan)
+
+          #2.6 SIC4DVar
+          for reach in self.alg_dict['sic4dvar']:
+               with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=RuntimeWarning)
+                    nflpe=np.nanmean(self.alg_dict['sic4dvar'][reach]['n'])
+               if self.obs_dict[reach]['nt'] > 0 and (not np.isnan(nflpe)):
+                    with warnings.catch_warnings():
+                         warnings.simplefilter("ignore", category=RuntimeWarning)
+                         init_params=(np.nanmean(self.alg_dict['sic4dvar'][reach]['n']), \
+                              np.nanmean(self.alg_dict['sic4dvar'][reach]['a0']))
+
+                    param_bounds=( (0.001,np.inf),(-min(self.obs_dict[reach]['dA'])+1,np.inf))
+
+                    res = optimize.minimize(fun=self.sic4dvar_objfun,
+                                        x0=init_params,
+                                        args=(self.obs_dict[reach],self.alg_dict['sic4dvar'][reach]['integrator']['qbar'] ),
+                                        bounds=param_bounds )
+
+                    param_est=res.x
+
+                    #store output
+                    self.alg_dict['sic4dvar'][reach]['integrator']['n']=param_est[0]
+                    self.alg_dict['sic4dvar'][reach]['integrator']['a0']=param_est[1]
+                    self.alg_dict['sic4dvar'][reach]['integrator']['q']=self.sic4dvar_flowlaw(param_est,self.obs_dict[reach])
+               else: 
+                    self.alg_dict['sic4dvar'][reach]['integrator']['n']=np.nan
+                    self.alg_dict['sic4dvar'][reach]['integrator']['a0']=np.nan
+                    self.alg_dict['sic4dvar'][reach]['integrator']['q']=np.full( (1,self.obs_dict[reach]['nt']),np.nan)
+
      def bam_objfun(self,params,obs,qbar_target): 
           qbam=self.bam_flowlaw(params,obs)
           qbam_bar=np.nanmean(qbam)
@@ -316,3 +374,39 @@ class Integrate:
 
                momma_q=np.reshape(momma_q,(1,len(reach_height)))
           return momma_q
+
+     def sad_objfun(self,params,obs,qbar_target): 
+          qsad=self.sad_flowlaw(params,obs)
+          qsad_bar=np.nanmean(qsad)
+          y=abs(qsad_bar-qbar_target)
+          return y
+
+     def sad_flowlaw(self,params,obs):
+          d_x_area=obs['dA']
+          reach_width=obs['w']
+          reach_slope=obs['S']
+          sad_n=params[0]
+          sad_Abar=params[1]
+          #keep this equation exactly how this function is written in riverobs 
+          qsad = ((d_x_area+sad_Abar)**(5/3) * reach_width**(-2/3) * \
+                    (reach_slope)**(1/2)) / sad_n
+          qsad=np.reshape(qsad,(1,len(d_x_area)))
+          return qsad
+
+     def sic4dvar_objfun(self,params,obs,qbar_target): 
+          qsic4dvar=self.sic4dvar_flowlaw(params,obs)
+          qsic4dvar_bar=np.nanmean(qsic4dvar)
+          y=abs(qsic4dvar_bar-qbar_target)
+          return y
+
+     def sic4dvar_flowlaw(self,params,obs):
+          d_x_area=obs['dA']
+          reach_width=obs['w']
+          reach_slope=obs['S']
+          sic4dvar_n=params[0]
+          sic4dvar_Abar=params[1]
+          #keep this equation exactly how this function is written in riverobs 
+          qsic4dvar = ((d_x_area+sic4dvar_Abar)**(5/3) * reach_width**(-2/3) * \
+                    (reach_slope)**(1/2)) / sic4dvar_n
+          qsic4dvar=np.reshape(qsic4dvar,(1,len(d_x_area)))
+          return qsic4dvar
