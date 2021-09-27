@@ -8,14 +8,14 @@ from pathlib import Path
 import sys
 
 # Local imports
-from src.Input import Input
-from src.Integrate import Integrate
-from src.Output import Output
+from moi.Input import Input
+from moi.Integrate import Integrate
+from moi.Output import Output
 
 # Constants
-INPUT_DIR = Path("/Users/mtd/OneDrive - The Ohio State University/Analysis/SWOT/Discharge/Confluence/moi_rundir")
-FLPE_DIR = Path("/Users/mtd/OneDrive - The Ohio State University/Analysis/SWOT/Discharge/Confluence/moi_rundir/flpe")
-OUTPUT_DIR = Path("/Users/mtd/OneDrive - The Ohio State University/Analysis/SWOT/Discharge/Confluence/moi_outdir")
+INPUT_DIR = Path("/mnt/data/input")
+FLPE_DIR = Path("/mnt/data/flpe")
+OUTPUT_DIR = Path("/mnt/data/output")
 
 def get_basin_data(basin_json):
     """Extract reach identifiers and return dictionary.
@@ -24,14 +24,13 @@ def get_basin_data(basin_json):
     SoS file as a Path object.
     """
 
-    # index = int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX"))
-    index = 3
+    index = int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX"))
     with open(basin_json) as json_file:
         data = json.load(json_file)
 
     return {
-        "basin_id" : int(data[index]["basin_id"]),    ## TODO
-        "reach_ids" : data[index]["reach_id"],    ## TODO
+        "basin_id" : int(data[index]["basin_id"]),
+        "reach_ids" : data[index]["reach_id"],
         "sos" : data[index]["sos"],
         "sword": data[index]["sword"]
     }
