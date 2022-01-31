@@ -80,7 +80,7 @@ class Input:
              swot_dataset = Dataset(swotfile)
 
              self.obs_dict[reach]={}
-             nt=len(swot_dataset.dimensions['nt'])
+             nt = swot_dataset.dimensions['nt'].size
              self.obs_dict[reach]['nt']=nt
              self.obs_dict[reach]['h']=swot_dataset["reach/wse"][0:nt].filled(np.nan)
              self.obs_dict[reach]['w']=swot_dataset["reach/width"][0:nt].filled(np.nan)
@@ -152,9 +152,10 @@ class Input:
         # geobam
         gb = Dataset(gb_file, 'r', format="NETCDF4")
         self.alg_dict["geobam"][r_id] = {
-            "q": np.array(self.__get_gb_data(gb, "logQ", True)),
-            "n": np.array(self.__get_gb_data(gb, "logn_man", True)),
-            "a0": np.array(self.__get_gb_data(gb, "A0", False))
+            "q": np.array(self.__get_gb_data(gb, "q", "q", True)),
+            "n": np.array(self.__get_gb_data(gb, "logn", "mean", True)),
+            # "a0": np.array(self.__get_gb_data(gb, "A0", False))
+            "a0": 1.0    # TODO temp value until work out neoBAM A0
         }
         gb.close()
 
@@ -265,7 +266,7 @@ class Input:
             "a0": np.nan
         }
 
-    def __get_gb_data(self, gb, group, logged):
+    def __get_gb_data(self, gb, group, pre, logged):
         """Return geoBAM data as a numpy array.
         
         Parameters
@@ -274,15 +275,17 @@ class Input:
             NetCDF file dataset to extract discharge time series
         group: str
             string name of group to access chains
+        pre: str
+            string prefix of variable name
         logged: bool
             boolean indicating if result is logged
         """
 
-        chain1 = gb[group]["mean_chain1"][:].filled(np.nan)
-        chain2 = gb[group]["mean_chain2"][:].filled(np.nan)
-        chain3 = gb[group]["mean_chain3"][:].filled(np.nan)
+        chain1 = gb[group][f"{pre}1"][:].filled(np.nan)
+        chain2 = gb[group][f"{pre}2"][:].filled(np.nan)
+        chain3 = gb[group][f"{pre}3"][:].filled(np.nan)
         chains = np.vstack((chain1, chain2, chain3))
-        
+
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
             if logged:
