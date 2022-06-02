@@ -1,4 +1,4 @@
-#aStandard imports
+#Standard imports
 import warnings
 
 # Third-party imports
@@ -27,7 +27,7 @@ class Integrate:
          integrate and store reach-level data
      """
 
-     def __init__(self, alg_dict, basin_dict, sos_dict, obs_dict):
+     def __init__(self, alg_dict, basin_dict, sos_dict, sword_dict, obs_dict):
           """
           Parameters
           ----------
@@ -42,6 +42,7 @@ class Integrate:
           self.alg_dict = alg_dict
           self.basin_dict = basin_dict
           self.obs_dict = obs_dict
+          self.sword_dict = sword_dict
           self.integ_dict = {
                "pre_q_mean": np.array([]),
                "q_mean": np.array([]),
@@ -68,28 +69,189 @@ class Integrate:
                for reach in self.alg_dict[alg]:
                     with warnings.catch_warnings():
                          warnings.simplefilter("ignore", category=RuntimeWarning)
-                         self.alg_dict[alg][reach]['qbar']=np.nanmean(self.alg_dict[alg][reach]['q'])
+                         if self.alg_dict[alg][reach]['s1-flpe-exists']:
+                              self.alg_dict[alg][reach]['qbar']=np.nanmean(self.alg_dict[alg][reach]['q'])
+                              if np.isnan(self.alg_dict[alg][reach]['qbar']):
+                                   #print('Calculated a mean flow nan for ',alg,'reachid=',reach,'. Using prior instead.')
+                                   self.alg_dict[alg][reach]['qbar']=self.sos_dict[reach]['Qbar']
+          
+
+
+     def pull_sword_attributes_for_reach(self,k):
+         """
+         Pull out needed SWORD data from the continent dataset arrays for a particular reach    
+         """
+    
+         sword_data_reach={}
+         # extract all single-dimension variables, including number of orbits and reach ids needed for multi-dim vars
+         for key in self.sword_dict:
+             if np.shape(self.sword_dict[key]) == (self.sword_dict['num_reaches'],):
+                 sword_data_reach[key]=self.sword_dict[key][k]
+
+         # extract multi-dim vars
+         for key in self.sword_dict:            
+             if key == 'rch_id_up':
+                 sword_data_reach[key]=self.sword_dict[key][0:sword_data_reach['n_rch_up'],k]
+             elif key == 'rch_id_dn':
+                 sword_data_reach[key]=self.sword_dict[key][0:sword_data_reach['n_rch_down'],k]
+             elif key == 'swot_orbits':
+                 sword_data_reach[key]=self.sword_dict[key][0:sword_data_reach['swot_obs'],k]
+    
+         return sword_data_reach
+
+     def ChecksPriorToAddingJunction(self,junction_to_check):
+        #check to see if this one already exists
+         AlreadyExists=False
+         for junction in self.junctions:
+             if junction['upflows']==junction_to_check['upflows'] and junction['downflows']==junction_to_check['downflows']: 
+                 AlreadyExists=True    
+    
+         #check to see if all reaches we've identified area in the basin 
+         AllReachesInReachFile=True
+         for r in junction_to_check['upflows']:
+             if str(r) not in self.basin_dict['reach_ids']:
+                 AllReachesInReachFile=False
+         for r in junction_to_check['downflows']:
+             if str(r) not in self.basin_dict['reach_ids']:
+                 AllReachesInReachFile=False            
+            
+         return AlreadyExists,AllReachesInReachFile
+
+     def CreateJunctionList(self):
+         # create list of junctions
+         self.junctions=list()
+
+         for reach in self.basin_dict['reach_ids']:
+             reach=np.int64(reach)
+             k=np.argwhere(self.sword_dict['reach_id'] == reach)
+             k=k[0,0]
+    
+             # extract reach dictionary for reach k
+             sword_data_reach=self.pull_sword_attributes_for_reach(k)    
+    
+             #1 try adding the upstream junction
+             junction_up=dict()    
+             junction_up['originating_reach_id']=reach
+    
+             junction_up['upflows']=list()
+             for i in range(sword_data_reach['n_rch_up']):
+                 junction_up['upflows'].append(sword_data_reach['rch_id_up'][i] )
+       
+             junction_up['downflows']=list()
+             junction_up['downflows'].append(reach)
+
+             AlreadyExists,AllReachesInReachFile=self.ChecksPriorToAddingJunction(junction_up)
+    
+             if not AlreadyExists and AllReachesInReachFile:
+                 self.junctions.append(junction_up)
+
+             #2 try adding the downstream junction
+             junction_dn=dict()
+             junction_dn['originating_reach_id']=reach #just adding this for bookkeeping/debugging purposes
+    
+             junction_dn['upflows']=list()
+             junction_dn['upflows'].append(reach)
+    
+             junction_dn['downflows']=list()
+             for i in range(sword_data_reach['n_rch_down']):
+                 junction_dn['downflows'].append(sword_data_reach['rch_id_dn'][i] )            
+
+             AlreadyExists,AllReachesInReachFile=self.ChecksPriorToAddingJunction(junction_dn)
+
+             if not AlreadyExists and AllReachesInReachFile:
+                 self.junctions.append(junction_dn) 
+
+     def MOI_ObjectiveFunc(self,Q,Qbar,sigmaQ):
+         # Q - value of discharge vector at which to evaluate objective function
+         # Qbar - prior value of Q e.g. stage 1 McFLI
+         # sigmaQ - vector of Q uncertainty
+         n=np.size(Q,0)
+         C=np.diag( np.reshape(sigmaQ**-1,[n,]) )
+         d=Qbar*sigmaQ**(-1)
+         res=C@Q-d
+         y=np.linalg.norm(res,2)
+         return y
 
      def integrate(self):
           """Integrate reach-level FLPE data."""
 
-          nReach=len(self.basin_dict['reach_ids'])
+          #0 create list of junctions, and figure out problem dimensions
+          self.CreateJunctionList()       
 
-          #1 compute "integrated" discharge. for a stream network this is somewhat complicated and
-          #   has not yet been implemented. for a set of several sequential reaches it is just the 
-          #   discharge averaged over the reaches. 
+          #get sizes of the matrix sizes m & n
+          m=0 #number of junctions
+          for junction in self.junctions:
+              m+=1
+              junction['row_num']=m-1    
+    
+          n=0 #number of reaches
+          #for reach in reaches:
+          for reach in self.basin_dict['reach_ids']:
+              n+=1
+              #these remaining lines were for debugging
+#              reach['col_num']=n
+#              if not reachids[n] == reach['reach_id']:
+#                  print('assumption that reachids variable is ordered same as reach_id is invalid!')
+
+          #1 compute "integrated" discharge. 
           for alg in self.alg_dict:
-               Qbar=np.empty([nReach,])
+               print('RUNNING MOI for ',alg)
+               Qbar=np.empty([n,])
                i=0
                for reach in self.alg_dict[alg]:
                     Qbar[i]=self.alg_dict[alg][reach]['qbar']
                     i+=1
-               with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", category=RuntimeWarning)
-                    QbarBar=np.nanmean(Qbar)
-               for reach in self.alg_dict[alg]:
+
+               #define G matrix
+               G=np.zeros((m,n))
+
+               for junction in self.junctions:
+                   row=junction['row_num']
+                   upcols=list()
+                   for upflow in junction['upflows']:
+                       try:
+                            kup=self.basin_dict['reach_ids'].index(str(upflow))
+                            upcols.append(kup)
+                       except: 
+                            print('did not find that one')
+
+                   downcols=list()
+                   for downflow in junction['downflows']:
+                       try:
+                            kdn=self.basin_dict['reach_ids'].index(str(downflow))
+                            downcols.append(kdn)
+                       except:
+                            print('did not find that one')
+    
+                   for upcol in upcols:
+                       G[row,upcol]=1
+                   for downcol in downcols:
+                       G[row,downcol]=-1
+ 
+               # solve integrator problem
+               bignumber=1e9
+     
+               sigQ=Qbar*0.5
+
+               cons_massbalance=optimize.LinearConstraint(G,np.zeros(m,),np.zeros(m,))
+               cons_positive=optimize.LinearConstraint(np.eye(n),np.zeros(n,),np.ones(n,)*bignumber)
+
+               res=optimize.minimize(fun=self.MOI_ObjectiveFunc,x0=np.reshape(Qbar,[n,]),args=(Qbar,sigQ),method='SLSQP',                      
+                      constraints=(cons_massbalance,cons_positive))
+
+               Qintegrator=res.x
+
+               if not res.success:
+                    print('Optimization failed for ', alg)
+
+               #assign integrated discharge to each algorithm dictionary
                     self.alg_dict[alg][reach]['integrator']={}
                     self.alg_dict[alg][reach]['integrator']['qbar']=QbarBar
+               i=0
+               for reach in self.alg_dict[alg]:
+                    self.alg_dict[alg][reach]['integrator']={}
+                    self.alg_dict[alg][reach]['integrator']['qbar']=Qintegrator[i]
+                    i+=1
 
           #2 compute optimal parameters for each algorithm's flow law
           #2.1 geobam   

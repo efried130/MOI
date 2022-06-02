@@ -13,9 +13,9 @@ from moi.Integrate import Integrate
 from moi.Output import Output
 
 # Constants
-INPUT_DIR = Path("/mnt/data/input")
-FLPE_DIR = Path("/mnt/data/flpe")
-OUTPUT_DIR = Path("/mnt/data/output")
+INPUT_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/verify/moi/input")
+FLPE_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/verify/moi/input/s1-flpe")
+OUTPUT_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/verify/moi/output")
 
 def get_basin_data(basin_json):
     """Extract reach identifiers and return dictionary.
@@ -23,13 +23,14 @@ def get_basin_data(basin_json):
     Dictionary is organized with a key of reach identifier and a value of
     SoS file as a Path object.
     """
-
-    index = int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX"))
+    #index = int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX"))
+    index = 0
     with open(basin_json) as json_file:
         data = json.load(json_file)
 
     return {
-        "basin_id" : int(data[index]["basin_id"]),
+        #"basin_id" : int(data[index]["basin_id"]),
+        "basin_id" : data[index]["basin_id"], #hope it's ok not to have basin ids always integers?
         "reach_ids" : data[index]["reach_id"],
         "sos" : data[index]["sos"],
         "sword": data[index]["sword"]
@@ -41,13 +42,19 @@ def main():
         basin_json = INPUT_DIR.joinpath(sys.argv[1])
     except IndexError:
         basin_json = INPUT_DIR.joinpath("basin.json") 
+
     basin_data = get_basin_data(basin_json)
 
-    input = Input(FLPE_DIR, INPUT_DIR / "sos", INPUT_DIR / "swot", basin_data)
+    branch="constrained"
+
+    input = Input(FLPE_DIR, INPUT_DIR / str("sos/"+branch), INPUT_DIR / "swot", INPUT_DIR / "sword", basin_data)
+
+    input.extract_sos()
     input.extract_alg()
     input.extract_swot()
+    input.extract_sword()
 
-    integrate = Integrate(input.alg_dict, input.basin_dict, input.sos_dict, input.obs_dict)
+    integrate = Integrate(input.alg_dict, input.basin_dict, input.sos_dict, input.sword_dict,input.obs_dict)
     integrate.integrate()
 
     output = Output(input.basin_dict, OUTPUT_DIR, integrate.integ_dict, integrate.alg_dict, integrate.obs_dict)
