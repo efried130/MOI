@@ -43,18 +43,23 @@ def main():
     except IndexError:
         basin_json = INPUT_DIR.joinpath("basin.json") 
 
+
     basin_data = get_basin_data(basin_json)
 
-    branch="constrained"
+    try: 
+        VerboseFlag=sys.argv[2]
+        if VerboseFlag == '-v': Verbose=True
+    except IndexError:
+        Verbose=False
 
-    input = Input(FLPE_DIR, INPUT_DIR / str("sos/"+branch), INPUT_DIR / "swot", INPUT_DIR / "sword", basin_data)
+    input = Input(FLPE_DIR, INPUT_DIR / "sos/", INPUT_DIR / "swot", INPUT_DIR / "sword", basin_data)
 
     input.extract_sos()
     input.extract_alg()
     input.extract_swot()
     input.extract_sword()
 
-    integrate = Integrate(input.alg_dict, input.basin_dict, input.sos_dict, input.sword_dict,input.obs_dict)
+    integrate = Integrate(input.alg_dict, input.basin_dict, input.sos_dict, input.sword_dict,input.obs_dict,Verbose)
     integrate.integrate()
 
     output = Output(input.basin_dict, OUTPUT_DIR, integrate.integ_dict, integrate.alg_dict, integrate.obs_dict)

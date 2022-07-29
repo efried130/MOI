@@ -82,6 +82,8 @@ class Input:
             k=k[0,0]
             self.sos_dict[reach]['Qbar']=sosQbars[k]
 
+        sos_dataset.close()
+
     def extract_sword(self):
         """Extracts and stores SWORD data in sword_dict.
         
@@ -102,7 +104,8 @@ class Input:
         reachfields=['reach_id','facc','n_rch_up','n_rch_down','rch_id_up','rch_id_dn','swot_obs','swot_orbits']
         for field in reachfields:
             self.sword_dict[field]=sword_dataset['reaches/' + field][:]
-
+ 
+        sword_dataset.close()
 
     def extract_swot(self):
  
@@ -184,6 +187,7 @@ class Input:
 
         # geobam
         if gb_file.exists():
+            print('reading',gb_file)
             gb = Dataset(gb_file, 'r', format="NETCDF4")
             self.alg_dict["geobam"][r_id] = {
                 "s1-flpe-exists": True,
@@ -275,6 +279,7 @@ class Input:
                  "a0" : mm["A0hat"][index].filled(np.nan)
             }
             mm.close()
+            #print('MetroMan file found. ')
         else:
             self.alg_dict["metroman"][r_id] = { 
                 "s1-flpe-exists" : False ,
@@ -284,6 +289,7 @@ class Input:
                 "a0" : np.nan,
                 "qbar" : self.sos_dict[r_id]['Qbar']
             }
+            #print('MetroMan file not found. Using prior')
 
         # sic4dvar
         if sv_file.exists():
