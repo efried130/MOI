@@ -13,9 +13,9 @@ from moi.Integrate import Integrate
 from moi.Output import Output
 
 # Constants
-INPUT_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/verify/moi/input")
-FLPE_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/verify/moi/input/s1-flpe")
-OUTPUT_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/verify/moi/output")
+INPUT_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/mnt/input")
+FLPE_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/mnt/flpe")
+OUTPUT_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/moi_outputs")
 
 def get_basin_data(basin_json):
     """Extract reach identifiers and return dictionary.
@@ -62,8 +62,9 @@ def main():
     integrate = Integrate(input.alg_dict, input.basin_dict, input.sos_dict, input.sword_dict,input.obs_dict,Verbose)
     integrate.integrate()
 
-    output = Output(input.basin_dict, OUTPUT_DIR, integrate.integ_dict, integrate.alg_dict, integrate.obs_dict)
+    output = Output(input.basin_dict, OUTPUT_DIR, integrate.integ_dict, integrate.alg_dict, integrate.obs_dict, input.sword_dir)
     output.write_output()
+    output.write_sword_output()
 
 if __name__ == "__main__":
     from datetime import datetime

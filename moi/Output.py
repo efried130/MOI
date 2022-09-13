@@ -4,6 +4,7 @@ from datetime import datetime
 # Third-party imports
 from netCDF4 import Dataset
 import numpy as np
+import shutil
 
 class Output:
     """Writes integration results stored in integ_dict to NetCDF file.
@@ -25,7 +26,7 @@ class Output:
         Write data stored to NetCDF file labelled with basin id
     """
 
-    def __init__(self, basin_dict, out_dir, integ_dict, alg_dict, obs_dict):
+    def __init__(self, basin_dict, out_dir, integ_dict, alg_dict, obs_dict, sword_dir):
         """
         Parameters
         ----------
@@ -42,6 +43,7 @@ class Output:
         self.stage_estimate = integ_dict
         self.alg_dict = alg_dict
         self.obs_dict = obs_dict
+        self.sword_dir = sword_dir
 
     def write_output(self):
         """Write data stored to NetCDF files for each reach
@@ -209,3 +211,37 @@ class Output:
              sic4dvar_qbar_stage2[:] = np.nan_to_num(self.alg_dict['sic4dvar'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
 
              out.close()
+
+    def write_sword_output(self):
+        """Make a new copy of the SWORD file, and write the Confluence estimates of the FLPs into the file.
+           by Mike, September 2022
+           """
+
+        sword_src_file=self.sword_dir.joinpath(self.basin_dict['sword'])
+        sword_dest_file=self.out_dir.joinpath(self.basin_dict['sword'])
+        shutil.copy(sword_src_file,sword_dest_file)
+
+        sword_dataset = Dataset(sword_dest_file,'a')
+
+        reaches = sword_dataset['reaches']['reach_id'][:]
+
+        for reach in self.basin_dict['reach_ids']:
+            reach_ind = np.where(reaches == np.int(reach))
+            print(reach)
+            print(reach_ind)
+ 
+            #1 bam
+            #2 hivdi
+            #3 metroman
+            sword_dataset['reaches']['discharge_models']['unconstrained']['MetroMan']['Abar'][reach_ind]= \
+                self.alg_dict['metroman'][reach]['integrator']['a0']
+            sword_dataset['reaches']['discharge_models']['unconstrained']['MetroMan']['ninf'][reach_ind]= \
+                self.alg_dict['metroman'][reach]['integrator']['na']
+            sword_dataset['reaches']['discharge_models']['unconstrained']['MetroMan']['p'][reach_ind]= \
+                self.alg_dict['metroman'][reach]['integrator']['x1']
+            #4 momma
+            #5 sad
+            #6 sicvdvar
+ 
+
+        sword_dataset.close()
