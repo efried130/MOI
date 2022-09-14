@@ -13,9 +13,13 @@ from moi.Integrate import Integrate
 from moi.Output import Output
 
 # Constants
-INPUT_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/mnt/input")
-FLPE_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/mnt/flpe")
-OUTPUT_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/moi_outputs")
+#INPUT_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/mnt/input")
+#FLPE_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/mnt/flpe")
+#OUTPUT_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/moi_outputs")
+
+INPUT_DIR = Path("/mnt/data/input")
+FLPE_DIR = Path("/mnt/data/flpe")
+OUTPUT_DIR = Path("/mnt/data/output")
 
 def get_basin_data(basin_json):
     """Extract reach identifiers and return dictionary.
