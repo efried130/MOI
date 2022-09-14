@@ -56,6 +56,13 @@ def main():
     except IndexError:
         Verbose=False
 
+    try:
+        Branch=sys.argv[3]
+    except IndexError:
+        Branch='unconstrained'
+
+    print('Running ',Branch,' branch.')
+
     input = Input(FLPE_DIR, INPUT_DIR / "sos/", INPUT_DIR / "swot", INPUT_DIR / "sword", basin_data)
 
     input.extract_sos()
@@ -68,7 +75,7 @@ def main():
 
     output = Output(input.basin_dict, OUTPUT_DIR, integrate.integ_dict, integrate.alg_dict, integrate.obs_dict, input.sword_dir)
     output.write_output()
-    output.write_sword_output()
+    output.write_sword_output(Branch)
 
 if __name__ == "__main__":
     from datetime import datetime

@@ -212,7 +212,7 @@ class Output:
 
              out.close()
 
-    def write_sword_output(self):
+    def write_sword_output(self,branch):
         """Make a new copy of the SWORD file, and write the Confluence estimates of the FLPs into the file.
            by Mike, September 2022
            """
@@ -231,35 +231,35 @@ class Output:
             #print(reach_ind)
  
             #1 bam 
-            sword_dataset['reaches']['discharge_models']['unconstrained']['BAM']['Abar'][reach_ind]= \
+            sword_dataset['reaches']['discharge_models'][branch]['BAM']['Abar'][reach_ind]= \
                 self.alg_dict['geobam'][reach]['integrator']['a0']
-            sword_dataset['reaches']['discharge_models']['unconstrained']['BAM']['n'][reach_ind]= \
+            sword_dataset['reaches']['discharge_models'][branch]['BAM']['n'][reach_ind]= \
                 self.alg_dict['geobam'][reach]['integrator']['n']
             #2 hivdi
-            sword_dataset['reaches']['discharge_models']['unconstrained']['HiVDI']['Abar'][reach_ind]=\
+            sword_dataset['reaches']['discharge_models'][branch]['HiVDI']['Abar'][reach_ind]=\
                 self.alg_dict['hivdi'][reach]['integrator']['Abar']
-            sword_dataset['reaches']['discharge_models']['unconstrained']['HiVDI']['alpha'][reach_ind]=\
+            sword_dataset['reaches']['discharge_models'][branch]['HiVDI']['alpha'][reach_ind]=\
                 self.alg_dict['hivdi'][reach]['integrator']['alpha']
-            sword_dataset['reaches']['discharge_models']['unconstrained']['HiVDI']['beta'][reach_ind]=\
+            sword_dataset['reaches']['discharge_models'][branch]['HiVDI']['beta'][reach_ind]=\
                 self.alg_dict['hivdi'][reach]['integrator']['beta']
             #3 metroman
-            sword_dataset['reaches']['discharge_models']['unconstrained']['MetroMan']['Abar'][reach_ind]= \
+            sword_dataset['reaches']['discharge_models'][branch]['MetroMan']['Abar'][reach_ind]= \
                 self.alg_dict['metroman'][reach]['integrator']['a0']
-            sword_dataset['reaches']['discharge_models']['unconstrained']['MetroMan']['ninf'][reach_ind]= \
+            sword_dataset['reaches']['discharge_models'][branch]['MetroMan']['ninf'][reach_ind]= \
                 self.alg_dict['metroman'][reach]['integrator']['na']
-            sword_dataset['reaches']['discharge_models']['unconstrained']['MetroMan']['p'][reach_ind]= \
+            sword_dataset['reaches']['discharge_models'][branch]['MetroMan']['p'][reach_ind]= \
                 self.alg_dict['metroman'][reach]['integrator']['x1']
             #4 momma
-            sword_dataset['reaches']['discharge_models']['unconstrained']['MOMMA']['B'][reach_ind]= \
+            sword_dataset['reaches']['discharge_models'][branch]['MOMMA']['B'][reach_ind]= \
                 self.alg_dict['momma'][reach]['integrator']['B']
-            sword_dataset['reaches']['discharge_models']['unconstrained']['MOMMA']['H'][reach_ind]= \
+            sword_dataset['reaches']['discharge_models'][branch]['MOMMA']['H'][reach_ind]= \
                 self.alg_dict['momma'][reach]['integrator']['H']
-            sword_dataset['reaches']['discharge_models']['unconstrained']['MOMMA']['Save'][reach_ind]= \
+            sword_dataset['reaches']['discharge_models'][branch]['MOMMA']['Save'][reach_ind]= \
                 self.alg_dict['momma'][reach]['integrator']['Save']
             #5 sads
-            sword_dataset['reaches']['discharge_models']['unconstrained']['SADS']['Abar'][reach_ind]= \
+            sword_dataset['reaches']['discharge_models'][branch]['SADS']['Abar'][reach_ind]= \
                 self.alg_dict['sad'][reach]['integrator']['a0']
-            sword_dataset['reaches']['discharge_models']['unconstrained']['SADS']['n'][reach_ind]= \
+            sword_dataset['reaches']['discharge_models'][branch]['SADS']['n'][reach_ind]= \
                 self.alg_dict['sad'][reach]['integrator']['n']
             #6 sicvdvar - note this is not included in SWORD v11 - so can't add these, at the moment
  
