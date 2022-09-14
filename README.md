@@ -7,3 +7,10 @@ MOI serves as the integrator module to the Confluence workflow. It extracts reac
 # setup
 
 # execution
+
+**Example Run**
+```
+%run /Users/mtd/GitHub/SWOT-confluence/moi/run_MOI.py basin.json -v 'unconstrained'
+```
+
+So the command line arguments are the basin file, the verbose flag, and the branch name, where branch name can be either constrained or unconstrained.

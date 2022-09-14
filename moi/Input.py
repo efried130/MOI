@@ -187,7 +187,7 @@ class Input:
 
         # geobam
         if gb_file.exists():
-            print('reading',gb_file)
+            #print('reading',gb_file)
             gb = Dataset(gb_file, 'r', format="NETCDF4")
             self.alg_dict["geobam"][r_id] = {
                 "s1-flpe-exists": True,
