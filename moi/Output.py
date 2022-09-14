@@ -227,8 +227,8 @@ class Output:
 
         for reach in self.basin_dict['reach_ids']:
             reach_ind = np.where(reaches == np.int(reach))
-            print(reach)
-            print(reach_ind)
+            #print(reach)
+            #print(reach_ind)
  
             #1 bam - currently unsure which geobam flow law we should be using...
             #2 hivdi
@@ -256,7 +256,7 @@ class Output:
             sword_dataset['reaches']['discharge_models']['unconstrained']['SADS']['Abar'][reach_ind]= \
                 self.alg_dict['sad'][reach]['integrator']['a0']
             sword_dataset['reaches']['discharge_models']['unconstrained']['SADS']['n'][reach_ind]= \
-                self.alg_dict['sad'][reach]['integrator']['n0']
+                self.alg_dict['sad'][reach]['integrator']['n']
             #6 sicvdvar - note this is not included in SWORD v11 - so can't add these, at the moment
  
 
