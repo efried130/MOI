@@ -230,7 +230,11 @@ class Output:
             #print(reach)
             #print(reach_ind)
  
-            #1 bam - currently unsure which geobam flow law we should be using...
+            #1 bam 
+            sword_dataset['reaches']['discharge_models']['unconstrained']['BAM']['Abar'][reach_ind]= \
+                self.alg_dict['geobam'][reach]['integrator']['a0']
+            sword_dataset['reaches']['discharge_models']['unconstrained']['BAM']['n'][reach_ind]= \
+                self.alg_dict['geobam'][reach]['integrator']['n']
             #2 hivdi
             sword_dataset['reaches']['discharge_models']['unconstrained']['HiVDI']['Abar'][reach_ind]=\
                 self.alg_dict['hivdi'][reach]['integrator']['Abar']
