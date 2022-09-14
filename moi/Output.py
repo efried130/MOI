@@ -218,7 +218,7 @@ class Output:
            """
 
         sword_src_file=self.sword_dir.joinpath(self.basin_dict['sword'])
-        sword_dest_file=self.out_dir.joinpath(self.basin_dict['sword'])
+        sword_dest_file=self.sword_dir.joinpath(self.basin_dict['sword'].replace('.nc', '_moi.nc'))
         shutil.copy(sword_src_file,sword_dest_file)
 
         sword_dataset = Dataset(sword_dest_file,'a')
