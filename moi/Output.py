@@ -230,8 +230,14 @@ class Output:
             print(reach)
             print(reach_ind)
  
-            #1 bam
+            #1 bam - currently unsure which geobam flow law we should be using...
             #2 hivdi
+            sword_dataset['reaches']['discharge_models']['unconstrained']['HiVDI']['Abar'][reach_ind]=\
+                self.alg_dict['hivdi'][reach]['integrator']['Abar']
+            sword_dataset['reaches']['discharge_models']['unconstrained']['HiVDI']['alpha'][reach_ind]=\
+                self.alg_dict['hivdi'][reach]['integrator']['alpha']
+            sword_dataset['reaches']['discharge_models']['unconstrained']['HiVDI']['beta'][reach_ind]=\
+                self.alg_dict['hivdi'][reach]['integrator']['beta']
             #3 metroman
             sword_dataset['reaches']['discharge_models']['unconstrained']['MetroMan']['Abar'][reach_ind]= \
                 self.alg_dict['metroman'][reach]['integrator']['a0']
@@ -240,8 +246,18 @@ class Output:
             sword_dataset['reaches']['discharge_models']['unconstrained']['MetroMan']['p'][reach_ind]= \
                 self.alg_dict['metroman'][reach]['integrator']['x1']
             #4 momma
-            #5 sad
-            #6 sicvdvar
+            sword_dataset['reaches']['discharge_models']['unconstrained']['MOMMA']['B'][reach_ind]= \
+                self.alg_dict['momma'][reach]['integrator']['B']
+            sword_dataset['reaches']['discharge_models']['unconstrained']['MOMMA']['H'][reach_ind]= \
+                self.alg_dict['momma'][reach]['integrator']['H']
+            sword_dataset['reaches']['discharge_models']['unconstrained']['MOMMA']['Save'][reach_ind]= \
+                self.alg_dict['momma'][reach]['integrator']['Save']
+            #5 sads
+            sword_dataset['reaches']['discharge_models']['unconstrained']['SADS']['Abar'][reach_ind]= \
+                self.alg_dict['sad'][reach]['integrator']['a0']
+            sword_dataset['reaches']['discharge_models']['unconstrained']['SADS']['n'][reach_ind]= \
+                self.alg_dict['sad'][reach]['integrator']['n0']
+            #6 sicvdvar - note this is not included in SWORD v11 - so can't add these, at the moment
  
 
         sword_dataset.close()
