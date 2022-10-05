@@ -28,9 +28,16 @@ def get_basin_data(basin_json):
     SoS file as a Path object.
     """
     #index = int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX"))
-    index = 0
+    #index = 0
+
+    if index_to_run == -235:
+        index=int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX"))
+    else:
+        index=index_to_run
+
     with open(basin_json) as json_file:
         data = json.load(json_file)
+
 
     return {
         #"basin_id" : int(data[index]["basin_id"]),
@@ -60,6 +67,11 @@ def main():
         Branch=sys.argv[3]
     except IndexError:
         Branch='unconstrained'
+
+    try:
+        index_to_run=int(sys.argv[4]) #integer
+    except IndexError:
+        index_to_run=-235
 
     print('Running ',Branch,' branch.')
 
