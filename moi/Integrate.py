@@ -416,6 +416,13 @@ class Integrate:
 #                        print('Qbar for ',reach,'=',Qbar[i])
                     i+=1
 
+               #check for whether FLPE data are ok
+               if np.all(Qbar==0):
+                   FLPE_Data_OK=False
+               else:
+                   FLPE_Data_OK=True
+      
+
                #define G matrix
                G=np.zeros((m,n))
 
@@ -453,41 +460,45 @@ class Integrate:
                cons_massbalance=optimize.LinearConstraint(G,np.zeros(m,),np.zeros(m,))
                cons_positive=optimize.LinearConstraint(np.eye(n),np.zeros(n,),np.ones(n,)*bignumber)
 
-               res=optimize.minimize(fun=self.MOI_ObjectiveFunc,x0=np.reshape(Qbar,[n,]),args=(Qbar,sigQ),method='SLSQP',                      
+               if not FLPE_Data_OK:
+                   print('FLPE data not ok for ',alg,'. setting Qintegrator = Qprior here')
+                   Qintegrator=Qbar
+               else:
+                   res=optimize.minimize(fun=self.MOI_ObjectiveFunc,x0=np.reshape(Qbar,[n,]),args=(Qbar,sigQ),method='SLSQP',                      
                       constraints=(cons_massbalance,cons_positive))
 
-               Qintegrator=res.x
+                   Qintegrator=res.x
 
-               # try computing uncertainty
-               if alg == 'metroman_ignore':
-                   nEnsemble=20
-                   #covQind=sigQ**2*np.eye(n)
-                   sigQv=np.reshape(sigQ,(n,1))
-                   rho=0.7
-                   covQ = np.matmul(sigQv,  sigQv.transpose()) * (rho* np.ones((n,n)) + (np.eye(n)-rho*np.eye(n) )   )  
-                   Qens=random.multivariate_normal(Qbar,covQ,nEnsemble)
-                   Qmin=10.
-                   Qens[Qens<Qmin]=Qmin
+                   # try computing uncertainty
+                   if alg == 'metroman_ignore':
+                       nEnsemble=20
+                       #covQind=sigQ**2*np.eye(n)
+                       sigQv=np.reshape(sigQ,(n,1))
+                       rho=0.7
+                       covQ = np.matmul(sigQv,  sigQv.transpose()) * (rho* np.ones((n,n)) + (np.eye(n)-rho*np.eye(n) )   )  
+                       Qens=random.multivariate_normal(Qbar,covQ,nEnsemble)
+                       Qmin=10.
+                       Qens[Qens<Qmin]=Qmin
                
-                   Qensc=np.empty((nEnsemble,n))
-                   for i in range(nEnsemble): 
-                        res=optimize.minimize(fun=self.MOI_ObjectiveFunc,x0=np.reshape(Qens[i,:],[n,]),args=(Qens[i,:],sigQ),method='SLSQP',                      
-                            constraints=(cons_massbalance,cons_positive))
-                        Qensc[i,:]=res.x
+                       Qensc=np.empty((nEnsemble,n))
+                       for i in range(nEnsemble): 
+                            res=optimize.minimize(fun=self.MOI_ObjectiveFunc,x0=np.reshape(Qens[i,:],[n,]),args=(Qens[i,:],sigQ),method='SLSQP',                      
+                                constraints=(cons_massbalance,cons_positive))
+                            Qensc[i,:]=res.x
 
-                   stdQc=Qensc.std(axis=0)
-                   stdQc_rel=stdQc/Qintegrator 
-               else:
-                   stdQc_rel=np.full(n,0.4)
+                       stdQc=Qensc.std(axis=0)
+                       stdQc_rel=stdQc/Qintegrator 
+                   else:
+                       stdQc_rel=np.full(n,0.4)
 
 #               if self.VerboseFlag:
 #                    print('Integrator Q=',Qintegrator)
 
-               if not res.success:
-                    print('Optimization failed for ', alg)
-                    if self.VerboseFlag: 
-                        print('Qbar=',Qbar)
-                    Qintegrator=Qbar
+                   if not res.success:
+                       print('Optimization failed for ', alg)
+                       if self.VerboseFlag: 
+                           print('Qbar=',Qbar)
+                       Qintegrator=Qbar
 
                i=0
                for reach in self.alg_dict[alg]:
