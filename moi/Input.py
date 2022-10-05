@@ -191,11 +191,12 @@ class Input:
             gb = Dataset(gb_file, 'r', format="NETCDF4")
             self.alg_dict["geobam"][r_id] = {
                 "s1-flpe-exists": True,
-                "q": np.array(self.__get_gb_data(gb, "q", "q", True)),
+                "q": np.array(self.__get_gb_data(gb, "q", "q", False)),
                 "n": np.array(self.__get_gb_data(gb, "logn", "mean", True)),
                 "a0": 1.0    # TODO temp value until work out neoBAM A0
             }
             gb.close()
+
         else:
             self.alg_dict["geobam"][r_id] = { 
                 "s1-flpe-exists" : False ,
@@ -385,6 +386,7 @@ class Input:
         chain1 = gb[group][f"{pre}1"][:].filled(np.nan)
         chain2 = gb[group][f"{pre}2"][:].filled(np.nan)
         chain3 = gb[group][f"{pre}3"][:].filled(np.nan)
+
         chains = np.vstack((chain1, chain2, chain3))
 
         with warnings.catch_warnings():

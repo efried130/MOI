@@ -485,6 +485,8 @@ class Integrate:
 
                if not res.success:
                     print('Optimization failed for ', alg)
+                    if self.VerboseFlag: 
+                        print('Qbar=',Qbar)
                     Qintegrator=Qbar
 
                i=0
