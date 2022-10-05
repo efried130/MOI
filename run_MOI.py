@@ -12,16 +12,8 @@ from moi.Input import Input
 from moi.Integrate import Integrate
 from moi.Output import Output
 
-# Constants
-#INPUT_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/mnt/input")
-#FLPE_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/mnt/flpe")
-#OUTPUT_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/moi_outputs")
 
-INPUT_DIR = Path("/mnt/data/input")
-FLPE_DIR = Path("/mnt/data/flpe")
-OUTPUT_DIR = Path("/mnt/data/output")
-
-def get_basin_data(basin_json):
+def get_basin_data(basin_json,index_to_run):
     """Extract reach identifiers and return dictionary.
     
     Dictionary is organized with a key of reach identifier and a value of
@@ -49,29 +41,43 @@ def get_basin_data(basin_json):
 
 def main():
 
-    try:
-        basin_json = INPUT_DIR.joinpath(sys.argv[1])
-    except IndexError:
-        basin_json = INPUT_DIR.joinpath("basin.json") 
-
-
-    basin_data = get_basin_data(basin_json)
-
+    # verbose 
     try: 
         VerboseFlag=sys.argv[2]
         if VerboseFlag == '-v': Verbose=True
     except IndexError:
         Verbose=False
 
+    #branch
     try:
         Branch=sys.argv[3]
     except IndexError:
         Branch='unconstrained'
 
+    #context
     try:
         index_to_run=int(sys.argv[4]) #integer
     except IndexError:
         index_to_run=-235
+
+    #data directories
+    if index_to_run == -235:
+        INPUT_DIR = Path("/mnt/data/input")
+        FLPE_DIR = Path("/mnt/data/flpe")
+        OUTPUT_DIR = Path("/mnt/data/output")
+    else:
+        INPUT_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/mnt/input")
+        FLPE_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/mnt/flpe")
+        OUTPUT_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/moi_outputs_dev")
+
+    #basin data
+    try:
+        basin_json = INPUT_DIR.joinpath(sys.argv[1])
+    except IndexError:
+        basin_json = INPUT_DIR.joinpath("basin.json") 
+
+
+    basin_data = get_basin_data(basin_json,index_to_run)
 
     print('Running ',Branch,' branch.')
 
