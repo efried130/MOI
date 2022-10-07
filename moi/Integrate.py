@@ -28,7 +28,7 @@ class Integrate:
          integrate and store reach-level data
      """
 
-     def __init__(self, alg_dict, basin_dict, sos_dict, sword_dict, obs_dict,VerboseFlag):
+     def __init__(self, alg_dict, basin_dict, sos_dict, sword_dict, obs_dict,Branch,VerboseFlag):
           """
           Parameters
           ----------
@@ -38,6 +38,13 @@ class Integrate:
                dict of reach_ids and SoS file needed to process entire basin of data
           sos_dict: dict
                dictionary of SoS data
+          sword_dict: dict
+               dictionary of SWORD data
+          obs_dict: dict
+               dictionary of SWOT observation data
+          Branch: string
+               constrained or unconstrained
+          VerboseFlag: logical
           """
 
           self.alg_dict = alg_dict
@@ -57,6 +64,7 @@ class Integrate:
           }
           self.moi_params = None
           self.sos_dict = sos_dict
+          self.Branch=Branch
           self.VerboseFlag = VerboseFlag
 
           self.get_pre_mean_q()
@@ -381,6 +389,9 @@ class Integrate:
      def integrate(self):
           """Integrate reach-level FLPE data."""
 
+          FLPE_Uncertainty=0.4
+          Gage_Uncertainty=0.05
+
           #0 create list of junctions, and figure out problem dimensions
           #0.1 remove type 4 reaches from topology
           self.RemoveDamReaches()
@@ -409,12 +420,24 @@ class Integrate:
           for alg in self.alg_dict:
                print('RUNNING MOI for ',alg)
                Qbar=np.empty([n,])
+               sigQ=np.empty([n,])
                i=0
                for reach in self.alg_dict[alg]:
-                    Qbar[i]=self.alg_dict[alg][reach]['qbar']
-#                    if self.VerboseFlag:
-#                        print('Qbar for ',reach,'=',Qbar[i])
+                    # if this reach is gaged using the mean flow in the sos, rather than the algorithm
+                    if ( (self.Branch == 'constrained') and self.sos_dict[reach]['overwritten_indices']==1) \
+                            and alg != 'momma' :
+                        Qbar[i]=self.sos_dict[reach]['Qbar']
+                        sigQ[i]=Qbar[i]*Gage_Uncertainty
+                    else:
+                        Qbar[i]=self.alg_dict[alg][reach]['qbar']
+                        sigQ[i]=Qbar[i]*FLPE_Uncertainty
                     i+=1
+
+               #specify uncertainty
+               bignumber=1e9
+     
+               # for any values of zero in FLPE Qbar, set uncertainty to a big number
+               sigQ[Qbar==0]=bignumber
 
                #check for whether FLPE data are ok
                if np.all(Qbar==0):
@@ -453,10 +476,6 @@ class Integrate:
 #                   print(G)
  
                # solve integrator problem
-               bignumber=1e9
-     
-               sigQ=Qbar*0.4
-
                cons_massbalance=optimize.LinearConstraint(G,np.zeros(m,),np.zeros(m,))
                cons_positive=optimize.LinearConstraint(np.eye(n),np.zeros(n,),np.ones(n,)*bignumber)
 
@@ -489,7 +508,7 @@ class Integrate:
                        stdQc=Qensc.std(axis=0)
                        stdQc_rel=stdQc/Qintegrator 
                    else:
-                       stdQc_rel=np.full(n,0.4)
+                       stdQc_rel=np.full(n,FLPE_Uncertainty)
 
 #               if self.VerboseFlag:
 #                    print('Integrator Q=',Qintegrator)
