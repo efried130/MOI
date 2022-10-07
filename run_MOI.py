@@ -88,7 +88,7 @@ def main():
     input.extract_swot()
     input.extract_sword()
 
-    integrate = Integrate(input.alg_dict, input.basin_dict, input.sos_dict, input.sword_dict,input.obs_dict,Verbose)
+    integrate = Integrate(input.alg_dict, input.basin_dict, input.sos_dict, input.sword_dict,input.obs_dict,Branch,Verbose)
     integrate.integrate()
 
     output = Output(input.basin_dict, OUTPUT_DIR, integrate.integ_dict, integrate.alg_dict, integrate.obs_dict, input.sword_dir)

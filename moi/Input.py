@@ -74,6 +74,8 @@ class Input:
     
         sosreachids=sos_dataset["reaches/reach_id"][:]
         sosQbars=sos_dataset["model/mean_q"][:]
+        overwritten_indices=sos_dataset["model/overwritten_indexes"][:]
+        overwritten_source=sos_dataset["model/overwritten_source"][:]
 
         self.sos_dict={}
         for reach in self.basin_dict['reach_ids']:
@@ -81,6 +83,8 @@ class Input:
             k=np.argwhere(sosreachids==np.int64(reach))
             k=k[0,0]
             self.sos_dict[reach]['Qbar']=sosQbars[k]
+            self.sos_dict[reach]['overwritten_indices']=overwritten_indices[k]
+            self.sos_dict[reach]['overwritten_source']=overwritten_source[k]
 
         sos_dataset.close()
 
