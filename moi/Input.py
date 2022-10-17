@@ -32,7 +32,7 @@ class Input:
         Extract reach identifiers and store in basin_dict
     """
 
-    def __init__(self, alg_dir, sos_dir, swot_dir, sword_dir,basin_data):
+    def __init__(self, alg_dir, sos_dir, swot_dir, sword_dir,basin_data,branch):
         """
         Parameters
         ----------
@@ -44,6 +44,8 @@ class Input:
             path to SWOT data
         basin_data: dict
             dict of reach_ids and SoS file needed to process entire basin of data
+        Branch: str
+            either constrained or unconstrained
         """
 
         self.alg_dict = {
@@ -60,6 +62,7 @@ class Input:
         self.sos_dir = sos_dir
         self.sword_dir = sword_dir
         self.swot_dir = swot_dir
+        self.branch = branch
 
     def extract_sos(self):
         """Extracts and stores SoS data in sos_dict.
@@ -74,8 +77,10 @@ class Input:
     
         sosreachids=sos_dataset["reaches/reach_id"][:]
         sosQbars=sos_dataset["model/mean_q"][:]
-        overwritten_indices=sos_dataset["model/overwritten_indexes"][:]
-        overwritten_source=sos_dataset["model/overwritten_source"][:]
+        sosfdc=sos_dataset["model/flow_duration_q"][:]
+        if self.branch == 'constrained':
+            overwritten_indices=sos_dataset["model/overwritten_indexes"][:]
+            overwritten_source=sos_dataset["model/overwritten_source"][:]
 
         self.sos_dict={}
         for reach in self.basin_dict['reach_ids']:
@@ -83,8 +88,13 @@ class Input:
             k=np.argwhere(sosreachids==np.int64(reach))
             k=k[0,0]
             self.sos_dict[reach]['Qbar']=sosQbars[k]
-            self.sos_dict[reach]['overwritten_indices']=overwritten_indices[k]
-            self.sos_dict[reach]['overwritten_source']=overwritten_source[k]
+            #self.sos_dict[reach]['q67']=(sosfdc[k,6]+sosfdc[k,6])/2 #averages probability .31 and .36
+            self.sos_dict[reach]['q33']=sosfdc[k,13] #probability = .66
+            if self.branch == 'constrained':
+                self.sos_dict[reach]['overwritten_indices']=overwritten_indices[k]
+                self.sos_dict[reach]['overwritten_source']=overwritten_source[k]
+            else:
+                self.sos_dict[reach]['overwritten_indices']=np.nan
 
         sos_dataset.close()
 

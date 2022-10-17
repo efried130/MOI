@@ -26,6 +26,8 @@ def get_basin_data(basin_json,index_to_run):
         index=int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX"))
     else:
         index=index_to_run
+        print('Running offline, with index = ',index)
+
 
     with open(basin_json) as json_file:
         data = json.load(json_file)
@@ -68,7 +70,7 @@ def main():
     else:
         INPUT_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/mnt/input")
         FLPE_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/mnt/flpe")
-        OUTPUT_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/moi_outputs_dev")
+        OUTPUT_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/moi_outputs_dev_unconstrained")
 
     #basin data
     try:
@@ -81,7 +83,7 @@ def main():
 
     print('Running ',Branch,' branch.')
 
-    input = Input(FLPE_DIR, INPUT_DIR / "sos/", INPUT_DIR / "swot", INPUT_DIR / "sword", basin_data)
+    input = Input(FLPE_DIR, INPUT_DIR / "sos/", INPUT_DIR / "swot", INPUT_DIR / "sword", basin_data,Branch)
 
     input.extract_sos()
     input.extract_alg()

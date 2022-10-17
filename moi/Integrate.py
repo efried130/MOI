@@ -81,9 +81,11 @@ class Integrate:
                          warnings.simplefilter("ignore", category=RuntimeWarning)
                          if self.alg_dict[alg][reach]['s1-flpe-exists']:
                               self.alg_dict[alg][reach]['qbar']=np.nanmean(self.alg_dict[alg][reach]['q'])
+                              self.alg_dict[alg][reach]['q33']=np.nanquantile(self.alg_dict[alg][reach]['q'],.33)
                               if np.isnan(self.alg_dict[alg][reach]['qbar']):
                                    #print('Calculated a mean flow nan for ',alg,'reachid=',reach,'. Using prior instead.')
                                    self.alg_dict[alg][reach]['qbar']=self.sos_dict[reach]['Qbar']
+                                   self.alg_dict[alg][reach]['q33']=self.sos_dict[reach]['q33']
           
 
 
@@ -242,10 +244,13 @@ class Integrate:
          return y
 
 
-     def bam_objfun(self,params,obs,qbar_target): 
+     def bam_objfun(self,params,obs,qbar_target,q33_target): 
           qbam=self.bam_flowlaw(params,obs)
           qbam_bar=np.nanmean(qbam)
-          y=abs(qbam_bar-qbar_target)
+          y=(qbam_bar-qbar_target)**2
+          if not np.isnan(q33_target):
+             qbam_33=np.nanquantile(qbam,.33)
+             y+=(qbam_33-q33_target)**2 
           return y
 
      def bam_flowlaw(self,params,obs):
@@ -260,10 +265,13 @@ class Integrate:
           qbam=np.reshape(qbam,(1,len(d_x_area)))
           return qbam
 
-     def hivdi_objfun(self,params,obs,qbar_target): 
+     def hivdi_objfun(self,params,obs,qbar_target,q33_target): 
           q=self.hivdi_flowlaw(params,obs)
           qbar=np.nanmean(q)
-          y=abs(qbar-qbar_target)
+          y=(qbar-qbar_target)**2
+          if not np.isnan(q33_target):
+             q33_alg=np.nanquantile(q,.33)
+             y+=(q33_alg-q33_target)**2 
           return y
 
      def hivdi_flowlaw(self,params,obs):
@@ -282,10 +290,13 @@ class Integrate:
           qhivdi=np.reshape(qhivdi,(1,len(d_x_area)))
           return qhivdi
 
-     def metroman_objfun(self,params,obs,qbar_target): 
+     def metroman_objfun(self,params,obs,qbar_target,q33_target): 
           q=self.metroman_flowlaw(params,obs)
           qbar=np.nanmean(q)
-          y=abs(qbar-qbar_target)
+          y=(qbar-qbar_target)**2
+          if not np.isnan(q33_target):
+             q33_alg=np.nanquantile(q,.33)
+             y+=(q33_alg-q33_target)**2 
           return y
 
      def metroman_flowlaw(self,params,obs):
@@ -305,15 +316,26 @@ class Integrate:
           metro_q=np.reshape(metro_q,(1,len(d_x_area)))
           return metro_q
 
-     def momma_objfun(self,params,obs,qbar_target,aux_var): 
+     def momma_objfun(self,params,obs,qbar_target,q33_target,aux_var): 
           q=self.momma_flowlaw(params,obs,aux_var)
           qbar=np.nanmean(q)
-          y=abs(qbar-qbar_target)
+          y=(qbar-qbar_target)**2
 
-          if np.any(np.isinf(q)):
-               # if the search sets H<B then the flow law returns inf
-               # in that case return an arbitrary very large number
-               y=3e38
+          if not np.isnan(q33_target):
+             q33_alg=np.nanquantile(q,.33)
+             y+=(q33_alg-q33_target)**2 
+
+          #impose a penalty if H gets too close to B
+          B=params[0]
+          H=params[1]
+
+          if B-H < -0.1:
+             yfac=1.
+          elif B-H > 0:
+             yfac=1e2
+          else:
+             yfac=990.*(B-H+0.1)+1.
+          y*=yfac
 
           return y
 
@@ -350,10 +372,15 @@ class Integrate:
                momma_q=np.reshape(momma_q,(1,len(reach_height)))
           return momma_q
 
-     def sad_objfun(self,params,obs,qbar_target): 
+     def sad_objfun(self,params,obs,qbar_target,q33_target): 
           qsad=self.sad_flowlaw(params,obs)
           qsad_bar=np.nanmean(qsad)
-          y=abs(qsad_bar-qbar_target)
+          y=(qsad_bar-qbar_target)**2
+
+          if not np.isnan(q33_target):
+             q33_alg=np.nanquantile(qsad,.33)
+             y+=(q33_alg-q33_target)**2 
+          
           return y
 
      def sad_flowlaw(self,params,obs):
@@ -386,51 +413,41 @@ class Integrate:
           qsic4dvar=np.reshape(qsic4dvar,(1,len(d_x_area)))
           return qsic4dvar
 
-     def integrate(self):
-          """Integrate reach-level FLPE data."""
+     def integrator_optimization_calcs(self,m,n,FLPE_Uncertainty,Gage_Uncertainty,FlowLevel,PreviousResiduals):
 
-          FLPE_Uncertainty=0.4
-          Gage_Uncertainty=0.05
-
-          #0 create list of junctions, and figure out problem dimensions
-          #0.1 remove type 4 reaches from topology
-          self.RemoveDamReaches()
-          #0.2 create junction list
-          self.CreateJunctionList()       
-
-#          if self.VerboseFlag:
-#              print(self.junctions)
-
-          #get sizes of the matrix sizes m & n
-          m=0 #number of junctions
-          for junction in self.junctions:
-              m+=1
-              junction['row_num']=m-1    
-    
-          n=0 #number of reaches
-          #for reach in reaches:
-          for reach in self.basin_dict['reach_ids']:
-              n+=1
-
-          if self.VerboseFlag:
-              print('Number of junctions = ',m)
-              print('Number of reaches= ',n)
+          #0 initialize dictionary of residuals, to be returned and passed back in for next iteration
+          residuals={}
+          self.GoodFLPE={}
 
           #1 compute "integrated" discharge. 
           for alg in self.alg_dict:
                print('RUNNING MOI for ',alg)
+               self.GoodFLPE['alg']=True
                Qbar=np.empty([n,])
                sigQ=np.empty([n,])
+               datasource=[]
                i=0
                for reach in self.alg_dict[alg]:
                     # if this reach is gaged using the mean flow in the sos, rather than the algorithm
-                    if ( (self.Branch == 'constrained') and self.sos_dict[reach]['overwritten_indices']==1) \
-                            and alg != 'momma' :
-                        Qbar[i]=self.sos_dict[reach]['Qbar']
+                    if (self.Branch == 'constrained') and (self.sos_dict[reach]['overwritten_indices']==1): 
+                        if FlowLevel == 'Mean':
+                            Qbar[i]=self.sos_dict[reach]['Qbar']
+                        elif FlowLevel == 'q33':
+                            Qbar[i]=self.sos_dict[reach]['q33']
+
                         sigQ[i]=Qbar[i]*Gage_Uncertainty
+                        datasource.append('Gage')
                     else:
-                        Qbar[i]=self.alg_dict[alg][reach]['qbar']
-                        sigQ[i]=Qbar[i]*FLPE_Uncertainty
+                        if FlowLevel == 'Mean':
+                            Qbar[i]=self.alg_dict[alg][reach]['qbar']
+                        elif FlowLevel == 'q33':
+                            Qbar[i]=self.alg_dict[alg][reach]['q33']
+
+                        if np.isnan(PreviousResiduals[alg][i]):
+                            sigQ[i]=Qbar[i]*FLPE_Uncertainty
+                        else:
+                            sigQ[i]=abs(PreviousResiduals[alg][i])
+                        datasource.append('FLPE')
                     i+=1
 
                #specify uncertainty
@@ -440,8 +457,10 @@ class Integrate:
                sigQ[Qbar==0]=bignumber
 
                #check for whether FLPE data are ok
-               if np.all(Qbar==0):
+               iFLPE=np.where(np.array(datasource)=='FLPE')
+               if np.all(Qbar[iFLPE]==0):
                    FLPE_Data_OK=False
+                   self.GoodFLPE[alg]=False
                else:
                    FLPE_Data_OK=True
       
@@ -472,8 +491,6 @@ class Integrate:
                    for downcol in downcols:
                        G[row,downcol]=-1
 
-#               if self.VerboseFlag:
-#                   print(G)
  
                # solve integrator problem
                cons_massbalance=optimize.LinearConstraint(G,np.zeros(m,),np.zeros(m,))
@@ -482,6 +499,7 @@ class Integrate:
                if not FLPE_Data_OK:
                    print('FLPE data not ok for ',alg,'. setting Qintegrator = Qprior here')
                    Qintegrator=Qbar
+                   residuals[alg]=np.full((n,),np.nan)
                else:
                    res=optimize.minimize(fun=self.MOI_ObjectiveFunc,x0=np.reshape(Qbar,[n,]),args=(Qbar,sigQ),method='SLSQP',                      
                       constraints=(cons_massbalance,cons_positive))
@@ -519,27 +537,55 @@ class Integrate:
                            print('Qbar=',Qbar)
                        Qintegrator=Qbar
 
+#                   if alg=='momma':
+#                       print(Qbar)
+#                       print(Qintegrator)
+
+                   #compute residuals
+                   if res.success:
+                       residuals[alg]= Qbar-Qintegrator
+                   else:
+                       residuals[alg]=np.full((n,),np.nan)
+
+               # save data
                i=0
                for reach in self.alg_dict[alg]:
-                    self.alg_dict[alg][reach]['integrator']={}
-                    self.alg_dict[alg][reach]['integrator']['qbar']=Qintegrator[i]
-                    self.alg_dict[alg][reach]['integrator']['sbQrel']=stdQc_rel[i]
+                    if 'integrator' not in self.alg_dict[alg][reach]:
+                        self.alg_dict[alg][reach]['integrator']={}
+                    if FlowLevel == 'Mean':
+                        self.alg_dict[alg][reach]['integrator']['qbar']=Qintegrator[i]
+                        self.alg_dict[alg][reach]['integrator']['sbQrel']=stdQc_rel[i]
+                    elif FlowLevel == 'q33':
+                        self.alg_dict[alg][reach]['integrator']['q33']=Qintegrator[i]
                     i+=1
 
-          #2 compute optimal parameters for each algorithm's flow law
+
+          return residuals
+
+     def compute_FLPs(self):
           #2.1 geobam   
           for reach in self.alg_dict['geobam']:
+               print('CALCULATING FLPs:',reach)
                with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
-                    nflpe=np.nanmean(self.alg_dict['geobam'][reach]['n'])
-               if self.obs_dict[reach]['nt'] > 0 and (not np.isnan(nflpe)):
+                    ninit=np.nanmean(self.alg_dict['geobam'][reach]['n'])
+               if self.obs_dict[reach]['nt'] > 0 :
+                    
+                    if np.isnan(ninit):
+                        ninit=0.03
+                    
                     with warnings.catch_warnings():
                          warnings.simplefilter("ignore", category=RuntimeWarning)
-                         init_params=(np.nanmean(self.alg_dict['geobam'][reach]['n']),np.nanmean(self.alg_dict['geobam'][reach]['a0']))
+                         init_params=(ninit,np.nanmean(self.alg_dict['geobam'][reach]['a0']))
                     param_bounds=( (0.001,np.inf),(-min(self.obs_dict[reach]['dA'])+1,np.inf))
+                    qbar=self.alg_dict['geobam'][reach]['integrator']['qbar'] 
+                    if 'q33' in self.alg_dict['geobam'][reach]['integrator']:
+                        q33=self.alg_dict['geobam'][reach]['integrator']['q33']
+                    else:
+                        q33=nan 
                     res = optimize.minimize(fun=self.bam_objfun,
                                         x0=init_params,
-                                        args=(self.obs_dict[reach],self.alg_dict['geobam'][reach]['integrator']['qbar'] ),
+                                        args=(self.obs_dict[reach],qbar,q33),
                                         bounds=param_bounds )
                     param_est=res.x
 
@@ -547,7 +593,10 @@ class Integrate:
                     self.alg_dict['geobam'][reach]['integrator']['n']=param_est[0]
                     self.alg_dict['geobam'][reach]['integrator']['a0']=param_est[1]
                     self.alg_dict['geobam'][reach]['integrator']['q']=self.bam_flowlaw(param_est,self.obs_dict[reach])
+
+
                else: 
+                    print('geobam FLP calcs failed, reach',reach)
                     self.alg_dict['geobam'][reach]['integrator']['n']=np.nan
                     self.alg_dict['geobam'][reach]['integrator']['a0']=np.nan
                     self.alg_dict['geobam'][reach]['integrator']['q']=np.full( (1,self.obs_dict[reach]['nt']),np.nan)
@@ -565,9 +614,14 @@ class Integrate:
                               np.nanmean(self.alg_dict['hivdi'][reach]['beta']),\
                               np.nanmean(self.alg_dict['hivdi'][reach]['a0']))
                     param_bounds=( (0.001,np.inf),(-1e2,1e2),(-min(self.obs_dict[reach]['dA'])+1,np.inf))
+                    qbar=self.alg_dict['hivdi'][reach]['integrator']['qbar']
+                    if 'q33' in self.alg_dict['hivdi'][reach]['integrator']:
+                        q33=self.alg_dict['hivdi'][reach]['integrator']['q33']
+                    else:
+                        q33=nan 
                     res = optimize.minimize(fun=self.hivdi_objfun,
                                         x0=init_params,
-                                        args=(self.obs_dict[reach],self.alg_dict['hivdi'][reach]['integrator']['qbar'] ),
+                                        args=(self.obs_dict[reach],qbar,q33),
                                         bounds=param_bounds )
                     param_est=res.x
 
@@ -595,9 +649,14 @@ class Integrate:
                               np.nanmean(self.alg_dict['metroman'][reach]['x1']),\
                               np.nanmean(self.alg_dict['metroman'][reach]['a0']))
                     param_bounds=( (0.001,np.inf),(-1e2,1e2),(-min(self.obs_dict[reach]['dA'])+1,np.inf))
+                    qbar=self.alg_dict['metroman'][reach]['integrator']['qbar']
+                    if 'q33' in self.alg_dict['metroman'][reach]['integrator']:
+                        q33=self.alg_dict['metroman'][reach]['integrator']['q33']
+                    else:
+                        q33=nan 
                     res = optimize.minimize(fun=self.metroman_objfun,
                                         x0=init_params,
-                                        args=(self.obs_dict[reach],self.alg_dict['metroman'][reach]['integrator']['qbar'] ),
+                                        args=(self.obs_dict[reach],qbar,q33),
                                         bounds=param_bounds )
                     param_est=res.x
 
@@ -622,16 +681,41 @@ class Integrate:
                          warnings.simplefilter("ignore", category=RuntimeWarning)
                          init_params=(np.nanmean(self.alg_dict['momma'][reach]['B']), \
                               np.nanmean(self.alg_dict['momma'][reach]['H']))
+
+                    #put a limit on the initial guess for depth
+                    min_H_obs=np.min(self.obs_dict[reach]['h'])
+                    max_H_obs=np.max(self.obs_dict[reach]['h'])
+
+                    if min_H_obs - init_params[0] > 10.:
+                         B=min_H_obs - 10.
+                         init_params=(B,B+10.)
                               
-                    param_bounds=( (0.001,np.min(self.obs_dict[reach]['h'])-0.001),(0.001,np.inf))
+                    param_bounds=( (0.1,np.min(self.obs_dict[reach]['h'])-0.1),(0.1,np.inf))
 
                     aux_var=self.alg_dict['momma'][reach]['Save']
 
+                    qbar=self.alg_dict['momma'][reach]['integrator']['qbar']
+                    if 'q33' in self.alg_dict['momma'][reach]['integrator']:
+                        q33=self.alg_dict['momma'][reach]['integrator']['q33']
+                    else:
+                        q33=nan 
+
                     res = optimize.minimize(fun=self.momma_objfun,
                                         x0=init_params,
-                                        args=(self.obs_dict[reach],self.alg_dict['momma'][reach]['integrator']['qbar'],aux_var ),
+                                        args=(self.obs_dict[reach],qbar,q33,aux_var ),
                                         bounds=param_bounds )
-                    param_est=res.x
+
+                    if not res.success:
+                        param_bounds=( (.1,np.min(self.obs_dict[reach]['h'])-0.1),(max_H_obs-1.,max_H_obs+1.)   )
+                        res = optimize.minimize(fun=self.momma_objfun,
+                                        x0=init_params,
+                                        args=(self.obs_dict[reach],qbar,q33,aux_var ),
+                                        bounds=param_bounds )
+                    if not res.success:
+                        print('Could not estimate MOMMA flow law parameters to fit MOI flow estimates. Revert to reach-scale FLPE estimates')
+                        param_est=( self.alg_dict['momma'][reach]['B'], self.alg_dict['momma'][reach]['H'] )
+                    else:
+                        param_est=res.x
 
                     #store output
                     self.alg_dict['momma'][reach]['integrator']['B']=param_est[0]
@@ -649,7 +733,8 @@ class Integrate:
                with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
                     nflpe=np.nanmean(self.alg_dict['sad'][reach]['n'])
-               if self.obs_dict[reach]['nt'] > 0 and (not np.isnan(nflpe)):
+               #if self.obs_dict[reach]['nt'] > 0 and (not np.isnan(nflpe)):
+               if self.obs_dict[reach]['nt'] > 0 and self.GoodFLPE['sad']:
                     with warnings.catch_warnings():
                          warnings.simplefilter("ignore", category=RuntimeWarning)
                          init_params=(np.nanmean(self.alg_dict['sad'][reach]['n']), \
@@ -657,9 +742,15 @@ class Integrate:
 
                     param_bounds=( (0.001,np.inf),(-min(self.obs_dict[reach]['dA'])+1,np.inf))
 
+                    qbar=self.alg_dict['sad'][reach]['integrator']['qbar']
+                    if 'q33' in self.alg_dict['sad'][reach]['integrator']:
+                        q33=self.alg_dict['sad'][reach]['integrator']['q33']
+                    else:
+                        q33=nan 
+
                     res = optimize.minimize(fun=self.sad_objfun,
                                         x0=init_params,
-                                        args=(self.obs_dict[reach],self.alg_dict['sad'][reach]['integrator']['qbar'] ),
+                                        args=(self.obs_dict[reach],qbar,q33),
                                         bounds=param_bounds )
 
                     param_est=res.x
@@ -701,3 +792,52 @@ class Integrate:
                     self.alg_dict['sic4dvar'][reach]['integrator']['n']=np.nan
                     self.alg_dict['sic4dvar'][reach]['integrator']['a0']=np.nan
                     self.alg_dict['sic4dvar'][reach]['integrator']['q']=np.full( (1,self.obs_dict[reach]['nt']),np.nan)
+
+     def integrate(self):
+          """Integrate reach-level FLPE data."""
+
+          FLPE_Uncertainty=0.4
+          Gage_Uncertainty=0.05
+
+          #0 create list of junctions, and figure out problem dimensions
+          #0.1 remove type 4 reaches from topology
+          self.RemoveDamReaches()
+          #0.2 create junction list
+          self.CreateJunctionList()       
+
+          #0.3 set number of flow levels to run
+          FlowLevels=['Mean','q33'] 
+          #FlowLevels=['q33'] 
+          #FlowLevels=['Mean'] 
+
+          #0.4 get sizes of the matrix sizes m & n
+          m=0 #number of junctions
+          for junction in self.junctions:
+              m+=1
+              junction['row_num']=m-1    
+    
+          n=0 #number of reaches
+          #for reach in reaches:
+          for reach in self.basin_dict['reach_ids']:
+              n+=1
+
+          if self.VerboseFlag:
+              print('Number of junctions = ',m)
+              print('Number of reaches= ',n)
+
+          #1 integration calculations
+          for FlowLevel in FlowLevels:
+              if self.VerboseFlag:
+                  print('Running flow level',FlowLevel)
+              residuals={} 
+              for alg in self.alg_dict:
+                  residuals[alg]=np.full((n,),np.nan)
+              niter=3
+              for i in range(0,niter):
+                  if self.VerboseFlag:
+                       print('Running iteration',i)
+                  residuals=self.integrator_optimization_calcs(m,n,FLPE_Uncertainty,Gage_Uncertainty,FlowLevel,residuals)
+
+
+          #2 compute optimal parameters for each algorithm's flow law
+          self.compute_FLPs()
