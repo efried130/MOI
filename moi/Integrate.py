@@ -70,22 +70,22 @@ class Integrate:
           self.get_pre_mean_q()
 
      def get_pre_mean_q(self):
-          """Calculate the mean discharge for each reach-level FLPE algorithm.
-          This represents the mean in time for each algorithm and each reach.
-          This should be done prior to integration operations.
-          """
-
-          for alg in self.alg_dict:
-               for reach in self.alg_dict[alg]:
-                    with warnings.catch_warnings():
-                         warnings.simplefilter("ignore", category=RuntimeWarning)
-                         if self.alg_dict[alg][reach]['s1-flpe-exists']:
-                              self.alg_dict[alg][reach]['qbar']=np.nanmean(self.alg_dict[alg][reach]['q'])
-                              self.alg_dict[alg][reach]['q33']=np.nanquantile(self.alg_dict[alg][reach]['q'],.33)
-                              if np.isnan(self.alg_dict[alg][reach]['qbar']):
-                                   #print('Calculated a mean flow nan for ',alg,'reachid=',reach,'. Using prior instead.')
-                                   self.alg_dict[alg][reach]['qbar']=self.sos_dict[reach]['Qbar']
-                                   self.alg_dict[alg][reach]['q33']=self.sos_dict[reach]['q33']
+        """Calculate the mean discharge for each reach-level FLPE algorithm.
+        This represents the mean in time for each algorithm and each reach.
+        This should be done prior to integration operations.
+        """
+        for alg in self.alg_dict:
+            for reach in self.alg_dict[alg]:
+                with warnings.catch_warnings():
+                            warnings.simplefilter("ignore", category=RuntimeWarning)
+                            
+                            if self.alg_dict[alg][reach]['s1-flpe-exists']:
+                                self.alg_dict[alg][reach]['qbar']=np.nanmean(self.alg_dict[alg][reach]['q'])
+                                self.alg_dict[alg][reach]['q33']=np.nanquantile(self.alg_dict[alg][reach]['q'],.33)
+                            
+                            if np.isnan(self.alg_dict[alg][reach]['qbar']):
+                                self.alg_dict[alg][reach]['qbar']=self.sos_dict[reach]['Qbar']
+                                self.alg_dict[alg][reach]['q33']=self.sos_dict[reach]['q33']
           
 
 
@@ -422,7 +422,7 @@ class Integrate:
           #1 compute "integrated" discharge. 
           for alg in self.alg_dict:
                print('RUNNING MOI for ',alg)
-               self.GoodFLPE['alg']=True
+               self.GoodFLPE[alg]=True
                Qbar=np.empty([n,])
                sigQ=np.empty([n,])
                datasource=[]
