@@ -2,6 +2,7 @@
 from glob import glob
 from pathlib import Path
 import warnings
+import os
 
 # Third-party imports
 from netCDF4 import Dataset
@@ -170,7 +171,8 @@ class Input:
             mo_file = self.alg_dir / "momma" / f"{r_id}_momma.nc"
             sd_file = self.alg_dir / "sad" / f"{r_id}_sad.nc"
             sv_file = self.alg_dir / "sic4dvar" / f"{r_id}_sic4dvar.nc"
-            mm_file = glob(str(self.alg_dir / "metroman" / f"*{r_id}*_metroman.nc"))    
+            # mm_file = glob(str(self.alg_dir / "metroman" / f"*{r_id}*_metroman.nc"))    
+            mm_file = glob(os.path.join(self.alg_dir,"metroman", f"*{r_id}*_metroman.nc"))
 
             if not mm_file:
                 mm_file=Path('dir/that/does/not/exist')  #this sets mm_file.exists() to false
@@ -237,7 +239,8 @@ class Input:
                 "q" : np.nan,
                 "alpha" : np.nan,
                 "beta" : np.nan,
-                "qbar" : self.sos_dict[r_id]['Qbar']
+                "qbar" : self.sos_dict[r_id]['Qbar'],
+                "q33" : np.nan
             }
 
         # momma
@@ -279,7 +282,8 @@ class Input:
                 "q" : np.nan,
                 "n" : np.nan,
                 "a0" : np.nan,
-                "qbar" : self.sos_dict[r_id]['Qbar']
+                "qbar" : self.sos_dict[r_id]['Qbar'],
+                "q33" : np.nan
             }
 
         # metroman    
@@ -304,6 +308,7 @@ class Input:
                 "a0" : np.nan,
                 "qbar" : self.sos_dict[r_id]['Qbar']
             }
+            
             #print('MetroMan file not found. Using prior')
 
         # sic4dvar
