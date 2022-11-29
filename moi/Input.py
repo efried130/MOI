@@ -171,7 +171,7 @@ class Input:
             mo_file = self.alg_dir / "momma" / f"{r_id}_momma.nc"
             sd_file = self.alg_dir / "sad" / f"{r_id}_sad.nc"
             sv_file = self.alg_dir / "sic4dvar" / f"{r_id}_sic4dvar.nc"
-            # mm_file = glob(str(self.alg_dir / "metroman" / f"*{r_id}*_metroman.nc"))    
+            #more robust os agnostic approach to finding files
             mm_file = glob(os.path.join(self.alg_dir,"metroman", f"*{r_id}*_metroman.nc"))
 
             if not mm_file:
@@ -263,7 +263,8 @@ class Input:
                 "B" : np.nan,
                 "H" : np.nan,
                 "Save" : np.nan,
-                "qbar" : self.sos_dict[r_id]['Qbar']
+                "qbar" : self.sos_dict[r_id]['Qbar'],
+                "q33" : np.nan
             }
 
         # sad
@@ -306,9 +307,9 @@ class Input:
                 "na" : np.nan,
                 "x1" : np.nan,
                 "a0" : np.nan,
-                "qbar" : self.sos_dict[r_id]['Qbar']
+                "qbar" : self.sos_dict[r_id]['Qbar'],
+                "q33" : np.nan
             }
-            
             #print('MetroMan file not found. Using prior')
 
         # sic4dvar
@@ -330,7 +331,8 @@ class Input:
                 "q5" : np.nan,
                 "n" : np.nan,
                 "a0" : np.nan,
-                "qbar" : self.sos_dict[r_id]['Qbar']
+                "qbar" : self.sos_dict[r_id]['Qbar'],
+                "q33" : np.nan
             }
 
     def __indicate_no_data(self, r_id):
