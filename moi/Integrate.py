@@ -496,6 +496,10 @@ class Integrate:
                cons_massbalance=optimize.LinearConstraint(G,np.zeros(m,),np.zeros(m,))
                cons_positive=optimize.LinearConstraint(np.eye(n),np.zeros(n,),np.ones(n,)*bignumber)
 
+               #Two possible uncertainty methods, but only one fully implemented
+               #UncertaintyMethod='Ensemble' #still experimental - also time-consuming
+               UncertaintyMethod='Linear' 
+
                if not FLPE_Data_OK:
                    print('FLPE data not ok for ',alg,'. setting Qintegrator = Qprior here')
                    Qintegrator=Qbar
@@ -505,41 +509,13 @@ class Integrate:
                       constraints=(cons_massbalance,cons_positive))
 
                    Qintegrator=res.x
-
-                   # try computing uncertainty
-                   if alg == 'metroman_ignore':
-                       nEnsemble=20
-                       #covQind=sigQ**2*np.eye(n)
-                       sigQv=np.reshape(sigQ,(n,1))
-                       rho=0.7
-                       covQ = np.matmul(sigQv,  sigQv.transpose()) * (rho* np.ones((n,n)) + (np.eye(n)-rho*np.eye(n) )   )  
-                       Qens=random.multivariate_normal(Qbar,covQ,nEnsemble)
-                       Qmin=10.
-                       Qens[Qens<Qmin]=Qmin
-               
-                       Qensc=np.empty((nEnsemble,n))
-                       for i in range(nEnsemble): 
-                            res=optimize.minimize(fun=self.MOI_ObjectiveFunc,x0=np.reshape(Qens[i,:],[n,]),args=(Qens[i,:],sigQ),method='SLSQP',                      
-                                constraints=(cons_massbalance,cons_positive))
-                            Qensc[i,:]=res.x
-
-                       stdQc=Qensc.std(axis=0)
-                       stdQc_rel=stdQc/Qintegrator 
-                   else:
-                       stdQc_rel=np.full(n,FLPE_Uncertainty)
-
-#               if self.VerboseFlag:
-#                    print('Integrator Q=',Qintegrator)
+                   stdQc_rel=self.compute_integrator_uncertainty(alg,m,n,sigQ,Qintegrator,FLPE_Uncertainty,UncertaintyMethod,G)
 
                    if not res.success:
                        print('Optimization failed for ', alg)
                        if self.VerboseFlag: 
                            print('Qbar=',Qbar)
                        Qintegrator=Qbar
-
-#                   if alg=='momma':
-#                       print(Qbar)
-#                       print(Qintegrator)
 
                    #compute residuals
                    if res.success:
@@ -561,6 +537,73 @@ class Integrate:
 
 
           return residuals
+
+     def compute_integrator_uncertainty(self,alg,m,n,sigQ,Qbar,FLPE_Uncertainty,UncertaintyMethod,G):
+
+          # compute covariance matrix
+          sigQ=FLPE_Uncertainty*Qbar #a little unsure about this bit...
+          sigQv=np.reshape(sigQ,(n,1))
+          rho=0.7
+          covQ = np.matmul(sigQv,  sigQv.transpose()) * (rho* np.ones((n,n)) + (np.eye(n)-rho*np.eye(n) )   )  
+
+          if UncertaintyMethod == 'Ensemble':
+              if alg == 'metroman_ignore':
+                  nEnsemble=20
+                  #covQind=sigQ**2*np.eye(n)
+                  Qens=random.multivariate_normal(Qbar,covQ,nEnsemble)
+                  Qmin=10.
+                  Qens[Qens<Qmin]=Qmin
+      
+                  Qensc=np.empty((nEnsemble,n))
+                  for i in range(nEnsemble): 
+                       res=optimize.minimize(fun=self.MOI_ObjectiveFunc,x0=np.reshape(Qens[i,:],[n,]),args=(Qens[i,:],sigQ),method='SLSQP',                      
+                           constraints=(cons_massbalance,cons_positive))
+                       Qensc[i,:]=res.x
+
+                  stdQc=Qensc.std(axis=0)
+                  stdQc_rel=stdQc/Qintegrator 
+              else:
+                  stdQc_rel=np.full(n,FLPE_Uncertainty)
+          elif UncertaintyMethod == 'Linear':
+              M=self.GetM(sigQv,G,m,n)
+              stdQc_rel=np.full(n,FLPE_Uncertainty)
+              Preach=np.zeros((n+m,n+m))
+              Preach=np.block([
+                  [covQ,            np.zeros((n,m))],
+                  [np.zeros((m,n)), np.zeros((m,m))]
+              ])         
+              Pc=M@Preach@np.transpose(M)
+              Pc=np.array(Pc)
+              covQb=Pc[0:n,0:n] #covariance matrix of reach errors
+
+              stdQc=np.sqrt(np.diagonal(covQb))
+              stdQc_rel=stdQc/Qbar
+
+          return stdQc_rel 
+ 
+     def GetM(self,sigQv,G,m,n):
+          # m: number of junctions
+          # n: number of reaches
+          # G: mxn
+          E=np.zeros((n,n)) #nxn
+          np.fill_diagonal(E,-2*np.reciprocal(sigQv))
+          F=np.transpose(G) #nxm
+          H=np.zeros((m,m)) #mxm
+          A=np.block([
+              [E,F],
+              [G,H]
+          ])  # A is n+m x n+m
+  
+          I=np.zeros((n,m))
+          J=np.zeros((m,n))
+
+          B=np.block([
+              [E,I],
+              [J,H]
+          ]) # B is n+m x n+m
+          M=B@np.linalg.inv(A)
+          return M
+          
 
      def compute_FLPs(self):
           #2.1 geobam   
