@@ -534,6 +534,8 @@ class Integrate:
                for reach in self.alg_dict[alg]:
                     if 'integrator' not in self.alg_dict[alg][reach]:
                         self.alg_dict[alg][reach]['integrator']={}
+                        self.alg_dict[alg][reach]['integrator']['qbar']=np.nan
+                        self.alg_dict[alg][reach]['integrator']['sbQrel']=np.nan
                     if FlowLevel == 'Mean':
                         self.alg_dict[alg][reach]['integrator']['qbar']=Qintegrator[i]
                         self.alg_dict[alg][reach]['integrator']['sbQrel']=stdQc_rel[i]
