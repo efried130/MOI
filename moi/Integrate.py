@@ -140,7 +140,7 @@ class Integrate:
     
              # extract reach dictionary for reach k
              sword_data_reach=self.pull_sword_attributes_for_reach(k)    
-    
+
              #1 try adding the upstream junction
              junction_up=dict()    
              junction_up['originating_reach_id']=reach
@@ -151,17 +151,18 @@ class Integrate:
                  junction_up['upflows'].append(sword_data_reach['rch_id_up'][i] )
        
              #1.2 for one of the reaches upstream of this junction, add all their downstream reaches
-             junction_up['downflows']=list()
-             kup=np.argwhere(self.sword_dict['reach_id'] == junction_up['upflows'][0])
-             kup=kup[0,0]
-             sword_data_reach_up=self.pull_sword_attributes_for_reach(kup)
-             for j in range(sword_data_reach_up['n_rch_down']):
-                 junction_up['downflows'].append(sword_data_reach_up['rch_id_dn'][j] )
+             if len(junction_up['upflows'])>0:
+                 junction_up['downflows']=list()
+                 kup=np.argwhere(self.sword_dict['reach_id'] == junction_up['upflows'][0])
+                 kup=kup[0,0]
+                 sword_data_reach_up=self.pull_sword_attributes_for_reach(kup)
+                 for j in range(sword_data_reach_up['n_rch_down']):
+                     junction_up['downflows'].append(sword_data_reach_up['rch_id_dn'][j] )
 
-             AlreadyExists,AllReachesInReachFile=self.ChecksPriorToAddingJunction(junction_up)
-    
-             if not AlreadyExists and AllReachesInReachFile:
-                 self.junctions.append(junction_up)
+                 AlreadyExists,AllReachesInReachFile=self.ChecksPriorToAddingJunction(junction_up)
+        
+                 if not AlreadyExists and AllReachesInReachFile:
+                     self.junctions.append(junction_up)
 
              #2 try adding the downstream junction
              junction_dn=dict()
@@ -173,17 +174,18 @@ class Integrate:
                  junction_dn['downflows'].append(sword_data_reach['rch_id_dn'][i] )            
 
              #2.2 for one of the reaches downstream of the junction, add all their upstream reaches
-             junction_dn['upflows']=list()
-             kdn=np.argwhere(self.sword_dict['reach_id'] == junction_dn['downflows'][0])
-             kdn=kdn[0,0]
-             sword_data_reach_dn=self.pull_sword_attributes_for_reach(kdn)
-             for j in range(sword_data_reach_dn['n_rch_up']):
-                 junction_dn['upflows'].append(sword_data_reach_dn['rch_id_up'][j] )
+             if len(junction_dn['downflows'])>0:
+                 junction_dn['upflows']=list()
+                 kdn=np.argwhere(self.sword_dict['reach_id'] == junction_dn['downflows'][0])
+                 kdn=kdn[0,0]
+                 sword_data_reach_dn=self.pull_sword_attributes_for_reach(kdn)
+                 for j in range(sword_data_reach_dn['n_rch_up']):
+                     junction_dn['upflows'].append(sword_data_reach_dn['rch_id_up'][j] )
 
-             AlreadyExists,AllReachesInReachFile=self.ChecksPriorToAddingJunction(junction_dn)
+                 AlreadyExists,AllReachesInReachFile=self.ChecksPriorToAddingJunction(junction_dn)
 
-             if not AlreadyExists and AllReachesInReachFile:
-                 self.junctions.append(junction_dn) 
+                 if not AlreadyExists and AllReachesInReachFile:
+                     self.junctions.append(junction_dn) 
 
      def RemoveDamReaches(self):
          for reachid in self.basin_dict['reach_ids']:
@@ -441,7 +443,11 @@ class Integrate:
                         if FlowLevel == 'Mean':
                             Qbar[i]=self.alg_dict[alg][reach]['qbar']
                         elif FlowLevel == 'q33':
-                            Qbar[i]=self.alg_dict[alg][reach]['q33']
+                            try:
+                                Qbar[i]=self.alg_dict[alg][reach]['q33']
+                            except:
+                                print('did not find q33. reach=',reach)
+                                Qbar[i]=np.nan
 
                         if np.isnan(PreviousResiduals[alg][i]):
                             sigQ[i]=Qbar[i]*FLPE_Uncertainty

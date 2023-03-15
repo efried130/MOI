@@ -108,7 +108,10 @@ class Output:
              gb_n[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['integrator']['n'], copy=True, nan=fillvalue)
              
              gb_qbar_stage1  = out.createVariable("geobam/qbar_reachScale", "f8", fill_value=fillvalue)
-             gb_qbar_stage1[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['qbar'], copy=True, nan=fillvalue)
+             try:
+                 gb_qbar_stage1[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['qbar'], copy=True, nan=fillvalue)
+             except:
+                 gb_qbar_stage1[:]=np.nan
              
              gb_qbar_stage2  = out.createVariable("geobam/qbar_basinScale", "f8", fill_value=fillvalue)
              gb_qbar_stage2[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
@@ -128,7 +131,10 @@ class Output:
              hv_beta[:] = np.nan_to_num(self.alg_dict['hivdi'][reach]['integrator']['beta'], copy=True, nan=fillvalue)
 
              hv_qbar_stage1  = out.createVariable("hivdi/qbar_reachScale", "f8", fill_value=fillvalue)
-             hv_qbar_stage1[:] = np.nan_to_num(self.alg_dict['hivdi'][reach]['qbar'], copy=True, nan=fillvalue)
+             try:
+                 hv_qbar_stage1[:] = np.nan_to_num(self.alg_dict['hivdi'][reach]['qbar'], copy=True, nan=fillvalue)
+             except:
+                 hv_qbar_stage1 = np.nan
              
              hv_qbar_stage2  = out.createVariable("hivdi/qbar_basinScale", "f8", fill_value=fillvalue)
              hv_qbar_stage2[:] = np.nan_to_num(self.alg_dict['hivdi'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
@@ -148,7 +154,10 @@ class Output:
              mm_x1[:] = np.nan_to_num(self.alg_dict['metroman'][reach]['integrator']['x1'], copy=True, nan=fillvalue)
 
              mm_qbar_stage1  = out.createVariable("metroman/qbar_reachScale", "f8", fill_value=fillvalue)
-             mm_qbar_stage1[:] = np.nan_to_num(self.alg_dict['metroman'][reach]['qbar'], copy=True, nan=fillvalue)
+             try:
+                 mm_qbar_stage1[:] = np.nan_to_num(self.alg_dict['metroman'][reach]['qbar'], copy=True, nan=fillvalue)
+             except:
+                 mm_qbar_stage1[:]=np.nan
              
              mm_qbar_stage2  = out.createVariable("metroman/qbar_basinScale", "f8", fill_value=fillvalue)
              mm_qbar_stage2[:] = np.nan_to_num(self.alg_dict['metroman'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
@@ -171,7 +180,10 @@ class Output:
              mo_Save[:] = np.nan_to_num(self.alg_dict['momma'][reach]['integrator']['Save'], copy=True, nan=fillvalue)
 
              mo_qbar_stage1  = out.createVariable("momma/qbar_reachScale", "f8", fill_value=fillvalue)
-             mo_qbar_stage1[:] = np.nan_to_num(self.alg_dict['momma'][reach]['qbar'], copy=True, nan=fillvalue)
+             try:
+                 mo_qbar_stage1[:] = np.nan_to_num(self.alg_dict['momma'][reach]['qbar'], copy=True, nan=fillvalue)
+             except:
+                 mo_qbar_stage1[:] = np.nan
              
              mo_qbar_stage2  = out.createVariable("momma/qbar_basinScale", "f8", fill_value=fillvalue)
              mo_qbar_stage2[:] = np.nan_to_num(self.alg_dict['momma'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
@@ -188,7 +200,10 @@ class Output:
              sad_a0[:] = np.nan_to_num(self.alg_dict['sad'][reach]['integrator']['a0'], copy=True, nan=fillvalue)
 
              sad_qbar_stage1  = out.createVariable("sad/qbar_reachScale", "f8", fill_value=fillvalue)
-             sad_qbar_stage1[:] = np.nan_to_num(self.alg_dict['sad'][reach]['qbar'], copy=True, nan=fillvalue)
+             try:
+                 sad_qbar_stage1[:] = np.nan_to_num(self.alg_dict['sad'][reach]['qbar'], copy=True, nan=fillvalue)
+             except:
+                 sad_qbar_stage1[:] = np.nan
              
              sad_qbar_stage2  = out.createVariable("sad/qbar_basinScale", "f8", fill_value=fillvalue)
              sad_qbar_stage2[:] = np.nan_to_num(self.alg_dict['sad'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
@@ -205,7 +220,10 @@ class Output:
              sic4dvar_a0[:] = np.nan_to_num(self.alg_dict['sic4dvar'][reach]['integrator']['a0'], copy=True, nan=fillvalue)
 
              sic4dvar_qbar_stage1  = out.createVariable("sic4dvar/qbar_reachScale", "f8", fill_value=fillvalue)
-             sic4dvar_qbar_stage1[:] = np.nan_to_num(self.alg_dict['sic4dvar'][reach]['qbar'], copy=True, nan=fillvalue)
+             try:
+                 sic4dvar_qbar_stage1[:] = np.nan_to_num(self.alg_dict['sic4dvar'][reach]['qbar'], copy=True, nan=fillvalue)
+             except:
+                 sic4dvar_qbar_stage1[:] = np.nan
              
              sic4dvar_qbar_stage2  = out.createVariable("sic4dvar/qbar_basinScale", "f8", fill_value=fillvalue)
              sic4dvar_qbar_stage2[:] = np.nan_to_num(self.alg_dict['sic4dvar'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
