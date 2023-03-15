@@ -116,6 +116,9 @@ class Output:
              gb_qbar_stage2  = out.createVariable("geobam/qbar_basinScale", "f8", fill_value=fillvalue)
              gb_qbar_stage2[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
 
+             gb_sbQ_rel = out.createVariable("geobam/sbQ_rel", "f8", fill_value=fillvalue)
+             gb_sbQ_rel[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['integrator']['sbQrel'], copy=True, nan=fillvalue)
+
              # hivdi
              hv = out.createGroup("hivdi")
              hvq  = out.createVariable("hivdi/q", "f8", ("nt",), fill_value=fillvalue)
@@ -138,6 +141,9 @@ class Output:
              
              hv_qbar_stage2  = out.createVariable("hivdi/qbar_basinScale", "f8", fill_value=fillvalue)
              hv_qbar_stage2[:] = np.nan_to_num(self.alg_dict['hivdi'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
+
+             hv_sbQ_rel = out.createVariable("hivdi/sbQ_rel", "f8", fill_value=fillvalue)
+             hv_sbQ_rel[:] = np.nan_to_num(self.alg_dict['hivdi'][reach]['integrator']['sbQrel'], copy=True, nan=fillvalue)
 
              # metroman
              mm = out.createGroup("metroman")
@@ -188,6 +194,9 @@ class Output:
              mo_qbar_stage2  = out.createVariable("momma/qbar_basinScale", "f8", fill_value=fillvalue)
              mo_qbar_stage2[:] = np.nan_to_num(self.alg_dict['momma'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
 
+             mo_sbQ_rel = out.createVariable("momma/sbQ_rel", "f8", fill_value=fillvalue)
+             mo_sbQ_rel[:] = np.nan_to_num(self.alg_dict['momma'][reach]['integrator']['sbQrel'], copy=True, nan=fillvalue)
+
              #sad
              sad=out.createGroup("sad")
              sadq = out.createVariable("sad/q", "f8", ("nt",), fill_value=fillvalue)
@@ -208,6 +217,9 @@ class Output:
              sad_qbar_stage2  = out.createVariable("sad/qbar_basinScale", "f8", fill_value=fillvalue)
              sad_qbar_stage2[:] = np.nan_to_num(self.alg_dict['sad'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
 
+             sad_sbQ_rel = out.createVariable("sad/sbQ_rel", "f8", fill_value=fillvalue)
+             sad_sbQ_rel[:] = np.nan_to_num(self.alg_dict['sad'][reach]['integrator']['sbQrel'], copy=True, nan=fillvalue)
+
              #sic4dvar
              sic4dvar=out.createGroup("sic4dvar")
              sic4dvarq = out.createVariable("sic4dvar/q", "f8", ("nt",), fill_value=fillvalue)
@@ -227,6 +239,9 @@ class Output:
              
              sic4dvar_qbar_stage2  = out.createVariable("sic4dvar/qbar_basinScale", "f8", fill_value=fillvalue)
              sic4dvar_qbar_stage2[:] = np.nan_to_num(self.alg_dict['sic4dvar'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
+
+             sic4dvar_sbQ_rel = out.createVariable("sic4dvar/sbQ_rel", "f8", fill_value=fillvalue)
+             sic4dvar_sbQ_rel[:] = np.nan_to_num(self.alg_dict['sic4dvar'][reach]['integrator']['sbQrel'], copy=True, nan=fillvalue)
 
              out.close()
 
@@ -253,6 +268,8 @@ class Output:
                 self.alg_dict['geobam'][reach]['integrator']['a0']
             sword_dataset['reaches']['discharge_models'][branch]['BAM']['n'][reach_ind]= \
                 self.alg_dict['geobam'][reach]['integrator']['n']
+            sword_dataset['reaches']['discharge_models'][branch]['BAM']['sbQ_rel'][reach_ind]= \
+                self.alg_dict['geobam'][reach]['integrator']['sbQ_rel']
             #2 hivdi
             sword_dataset['reaches']['discharge_models'][branch]['HiVDI']['Abar'][reach_ind]=\
                 self.alg_dict['hivdi'][reach]['integrator']['Abar']
@@ -260,6 +277,8 @@ class Output:
                 self.alg_dict['hivdi'][reach]['integrator']['alpha']
             sword_dataset['reaches']['discharge_models'][branch]['HiVDI']['beta'][reach_ind]=\
                 self.alg_dict['hivdi'][reach]['integrator']['beta']
+            sword_dataset['reaches']['discharge_models'][branch]['HiVDI']['sbQ_rel'][reach_ind]= \
+                self.alg_dict['hivdi'][reach]['integrator']['sbQ_rel']
             #3 metroman
             sword_dataset['reaches']['discharge_models'][branch]['MetroMan']['Abar'][reach_ind]= \
                 self.alg_dict['metroman'][reach]['integrator']['a0']
@@ -267,6 +286,8 @@ class Output:
                 self.alg_dict['metroman'][reach]['integrator']['na']
             sword_dataset['reaches']['discharge_models'][branch]['MetroMan']['p'][reach_ind]= \
                 self.alg_dict['metroman'][reach]['integrator']['x1']
+            sword_dataset['reaches']['discharge_models'][branch]['MetroMan']['sbQ_rel'][reach_ind]= \
+                self.alg_dict['metroman'][reach]['integrator']['sbQ_rel']
             #4 momma
             sword_dataset['reaches']['discharge_models'][branch]['MOMMA']['B'][reach_ind]= \
                 self.alg_dict['momma'][reach]['integrator']['B']
@@ -279,6 +300,8 @@ class Output:
                 self.alg_dict['sad'][reach]['integrator']['a0']
             sword_dataset['reaches']['discharge_models'][branch]['SADS']['n'][reach_ind]= \
                 self.alg_dict['sad'][reach]['integrator']['n']
+            sword_dataset['reaches']['discharge_models'][branch]['SADS']['sbQ_rel'][reach_ind]= \
+                self.alg_dict['sad'][reach]['integrator']['sbQ_rel']
             #6 sicvdvar - note this is not included in SWORD v11 - so can't add these, at the moment
  
 
