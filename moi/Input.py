@@ -127,6 +127,7 @@ class Input:
         self.obs_dict={}
 
         for reach in self.basin_dict['reach_ids']:
+             reach = str(reach)
              swotfile=self.swot_dir.joinpath(reach+'_SWOT.nc')
              swot_dataset = Dataset(swotfile)
 
