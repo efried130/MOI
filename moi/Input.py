@@ -127,7 +127,6 @@ class Input:
         self.obs_dict={}
 
         for reach in self.basin_dict['reach_ids']:
-             reach = str(reach)
              swotfile=self.swot_dir.joinpath(reach+'_SWOT.nc')
              swot_dataset = Dataset(swotfile)
 
@@ -220,7 +219,8 @@ class Input:
                 "q" : np.nan,
                 "n" : np.nan,
                 "a0" : np.nan,
-                "qbar" : self.sos_dict[r_id]['Qbar']
+                "qbar" : self.sos_dict[r_id]['Qbar'],
+                "q33" : self.sos_dict[r_id]['q33']
             }
 
         # hivdi
@@ -241,7 +241,7 @@ class Input:
                 "alpha" : np.nan,
                 "beta" : np.nan,
                 "qbar" : self.sos_dict[r_id]['Qbar'],
-                "q33" : np.nan
+                "q33" : self.sos_dict[r_id]['q33']
             }
 
         # momma
@@ -265,7 +265,7 @@ class Input:
                 "H" : np.nan,
                 "Save" : np.nan,
                 "qbar" : self.sos_dict[r_id]['Qbar'],
-                "q33" : np.nan
+                "q33" : self.sos_dict[r_id]['q33']
             }
 
         # sad
@@ -285,7 +285,7 @@ class Input:
                 "n" : np.nan,
                 "a0" : np.nan,
                 "qbar" : self.sos_dict[r_id]['Qbar'],
-                "q33" : np.nan
+                "q33" : self.sos_dict[r_id]['q33']
             }
 
         # metroman    
@@ -309,7 +309,7 @@ class Input:
                 "x1" : np.nan,
                 "a0" : np.nan,
                 "qbar" : self.sos_dict[r_id]['Qbar'],
-                "q33" : np.nan
+                "q33" : self.sos_dict[r_id]['q33']
             }
             #print('MetroMan file not found. Using prior')
 
@@ -333,7 +333,7 @@ class Input:
                 "n" : np.nan,
                 "a0" : np.nan,
                 "qbar" : self.sos_dict[r_id]['Qbar'],
-                "q33" : np.nan
+                "q33" : self.sos_dict[r_id]['q33']
             }
 
     def __indicate_no_data(self, r_id):
