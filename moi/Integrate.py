@@ -430,6 +430,7 @@ class Integrate:
                datasource=[]
                i=0
                for reach in self.alg_dict[alg]:
+
                     # if this reach is gaged using the mean flow in the sos, rather than the algorithm
                     if (self.Branch == 'constrained') and (self.sos_dict[reach]['overwritten_indices']==1): 
                         if FlowLevel == 'Mean':
@@ -456,9 +457,13 @@ class Integrate:
                         datasource.append('FLPE')
                     i+=1
 
+               # this handles accidental nans still in the flow estimates
+               #   setting to zero should let these get reset
+               Qbar[np.isnan(Qbar)]=0.
+               Qbar[np.isinf(Qbar)]=0.
+
                #specify uncertainty
                bignumber=1e9
-     
                # for any values of zero in FLPE Qbar, set uncertainty to a big number
                sigQ[Qbar==0]=bignumber
 
