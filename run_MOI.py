@@ -33,13 +33,31 @@ def get_basin_data(basin_json,index_to_run):
         data = json.load(json_file)
 
 
-    return {
-        #"basin_id" : int(data[index]["basin_id"]),
-        "basin_id" : data[index]["basin_id"], #hope it's ok not to have basin ids always integers?
-        "reach_ids" : data[index]["reach_id"],
-        "sos" : data[index]["sos"],
-        "sword": data[index]["sword"]
-    }
+    # ~~Error Handling~~
+    # there is an issue where running on one basin causes an index error here
+    # here we will check to see if the index we are looking for exists
+    # this SHOULD allways exist if there is more than one reach
+    # There should be a more elegant way to check the number of sets, 
+    # but the data structure changes when only one set is written out.
+
+    try:
+        test_index = data[index]
+        return {
+            #"basin_id" : int(data[index]["basin_id"]),
+            "basin_id" : data[index]["basin_id"], #hope it's ok not to have basin ids always integers?
+            "reach_ids" : data[index]["reach_id"],
+            "sos" : data[index]["sos"],
+            "sword": data[index]["sword"]
+        }
+    except:
+                return {
+            #"basin_id" : int(data["basin_id"]),
+            "basin_id" : data["basin_id"], #hope it's ok not to have basin ids always integers?
+            "reach_ids" : data["reach_id"],
+            "sos" : data["sos"],
+            "sword": data["sword"]
+        }
+
 
 def main():
 
