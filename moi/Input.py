@@ -85,17 +85,26 @@ class Input:
 
         self.sos_dict={}
         for reach in self.basin_dict['reach_ids']:
-            self.sos_dict[reach]={}
-            k=np.argwhere(sosreachids==np.int64(reach))
-            k=k[0,0]
-            self.sos_dict[reach]['Qbar']=sosQbars[k]
-            #self.sos_dict[reach]['q67']=(sosfdc[k,6]+sosfdc[k,6])/2 #averages probability .31 and .36
-            self.sos_dict[reach]['q33']=sosfdc[k,13] #probability = .66
-            if self.branch == 'constrained':
-                self.sos_dict[reach]['overwritten_indices']=overwritten_indices[k]
-                self.sos_dict[reach]['overwritten_source']=overwritten_source[k]
-            else:
-                self.sos_dict[reach]['overwritten_indices']=np.nan
+            try:
+                self.sos_dict[reach]={}
+                k=np.argwhere(sosreachids==np.int64(reach))
+                k=k[0,0]
+                self.sos_dict[reach]['Qbar']=sosQbars[k]
+                #self.sos_dict[reach]['q67']=(sosfdc[k,6]+sosfdc[k,6])/2 #averages probability .31 and .36
+                self.sos_dict[reach]['q33']=sosfdc[k,13] #probability = .66
+                if self.branch == 'constrained':
+                    self.sos_dict[reach]['overwritten_indices']=overwritten_indices[k]
+                    self.sos_dict[reach]['overwritten_source']=overwritten_source[k]
+                else:
+                    self.sos_dict[reach]['overwritten_indices']=np.nan
+            except:
+                print(f'reach data not found for {reach}')
+                # self.sos_dict[reach]={}
+                # self.sos_dict[reach]['Qbar']=np.nan
+                # #self.sos_dict[reach]['q67']=(sosfdc[k,6]+sosfdc[k,6])/2 #averages probability .31 and .36
+                # self.sos_dict[reach]['q33']=np.nan #probability = .66
+                # self.sos_dict[reach]['overwritten_indices']=np.nan
+
 
         sos_dataset.close()
 
@@ -128,7 +137,12 @@ class Input:
 
         for reach in self.basin_dict['reach_ids']:
              swotfile=self.swot_dir.joinpath(reach+'_SWOT.nc')
-             swot_dataset = Dataset(swotfile)
+             try:
+                swot_dataset = Dataset(swotfile)
+                print(f'swot file found for {reach}')
+             except:
+                 print(f'swot file not found for {reach}')
+                 continue
 
              self.obs_dict[reach]={}
              nt = swot_dataset.dimensions['nt'].size
@@ -158,6 +172,8 @@ class Input:
              shape_iDelete=np.shape(iDelete)
              nDelete=shape_iDelete[1]
              self.obs_dict[reach]['nt'] -= nDelete
+        if self.obs_dict == {}:
+            raise LookupError('No reaches in basin processed')
 
     def extract_alg(self):
         """Extracts and stores reach-level FLPE algorithm data in alg_dict."""
