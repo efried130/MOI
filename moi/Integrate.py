@@ -135,11 +135,13 @@ class Integrate:
 
          for reach in self.basin_dict['reach_ids']:
              reach=np.int64(reach)
+             print('working on this reach', reach)
              k=np.argwhere(self.sword_dict['reach_id'] == reach)
              k=k[0,0]
     
              # extract reach dictionary for reach k
-             sword_data_reach=self.pull_sword_attributes_for_reach(k)    
+             sword_data_reach=self.pull_sword_attributes_for_reach(k)
+             print('sd', sword_data_reach)   
 
              #1 try adding the upstream junction
              junction_up=dict()    
@@ -153,6 +155,13 @@ class Integrate:
              #1.2 for one of the reaches upstream of this junction, add all their downstream reaches
              if len(junction_up['upflows'])>0:
                  junction_up['downflows']=list()
+
+                 # sometimes sword says there are upstream reaches and there actually isnt
+                 # in these cases skip the reach and raise a warning
+                 if not any(junction_up['upflows']):
+                    warnings.warn(f'Upsream reaches not found for reach {reach}')
+                    continue
+
                  kup=np.argwhere(self.sword_dict['reach_id'] == junction_up['upflows'][0])
                  kup=kup[0,0]
                  sword_data_reach_up=self.pull_sword_attributes_for_reach(kup)
@@ -176,6 +185,13 @@ class Integrate:
              #2.2 for one of the reaches downstream of the junction, add all their upstream reaches
              if len(junction_dn['downflows'])>0:
                  junction_dn['upflows']=list()
+
+                 # sometimes sword says there are downstream reaches and there actually isnt
+                 # in these cases skip the reach and raise a warning
+                 if not any(junction_dn['downflows']):
+                    warnings.warn(f'Downstream reaches not found for reach {reach}')
+                    continue
+
                  kdn=np.argwhere(self.sword_dict['reach_id'] == junction_dn['downflows'][0])
                  kdn=kdn[0,0]
                  sword_data_reach_dn=self.pull_sword_attributes_for_reach(kdn)
@@ -521,7 +537,8 @@ class Integrate:
 
                    Qintegrator=res.x
                    stdQc_rel=self.compute_integrator_uncertainty(alg,m,n,sigQ,Qintegrator,FLPE_Uncertainty,UncertaintyMethod,G)
-
+                   if stdQc_rel == False:
+                    res.success = False
                    if not res.success:
                        print('Optimization failed for ', alg)
                        if self.VerboseFlag: 
@@ -543,7 +560,12 @@ class Integrate:
                         self.alg_dict[alg][reach]['integrator']['sbQ_rel']=np.nan
                     if FlowLevel == 'Mean':
                         self.alg_dict[alg][reach]['integrator']['qbar']=Qintegrator[i]
-                        self.alg_dict[alg][reach]['integrator']['sbQ_rel']=stdQc_rel[i]
+                        if res.success:
+                            self.alg_dict[alg][reach]['integrator']['sbQ_rel']=stdQc_rel[i]
+                        else:
+                            warnings.warn('Topology probelm encountered, using prior uncertainty for sbQ_rel')
+                            self.alg_dict[alg][reach]['integrator']['sbQ_rel']=Qbar[i]*FLPE_Uncertainty
+
                     elif FlowLevel == 'q33':
                         self.alg_dict[alg][reach]['integrator']['q33']=Qintegrator[i]
                     i+=1
@@ -578,7 +600,11 @@ class Integrate:
               else:
                   stdQc_rel=np.full(n,FLPE_Uncertainty)
           elif UncertaintyMethod == 'Linear':
-              M=self.GetM(sigQv,G,m,n)
+              try:
+                M=self.GetM(sigQv,G,m,n)
+              except:
+                warnings.warn('Singular matrix found when caluculating M, indicative of a topolgy problem. Setting Qintegrator=Qbars')
+                return False
               stdQc_rel=np.full(n,FLPE_Uncertainty)
               Preach=np.zeros((n+m,n+m))
               Preach=np.block([
@@ -614,6 +640,8 @@ class Integrate:
               [E,I],
               [J,H]
           ]) # B is n+m x n+m
+          if np.linalg.det(A) == 0:
+            raise ValueError('Singular Matrix found, indicative of SWORD topology problems')
           M=B@np.linalg.inv(A)
           return M
           
@@ -756,20 +784,30 @@ class Integrate:
                     else:
                         q33=nan 
 
-                    res = optimize.minimize(fun=self.momma_objfun,
-                                        x0=init_params,
-                                        args=(self.obs_dict[reach],qbar,q33,aux_var ),
-                                        bounds=param_bounds )
+                    try:
+                        # the minimize is not just failing to minimize and returnning res.success=fale
+                        # it is failing to minimize and raising an error, so we implement try excepts here.
+                        res = optimize.minimize(fun=self.momma_objfun,
+                                            x0=init_params,
+                                            args=(self.obs_dict[reach],qbar,q33,aux_var ),
+                                            bounds=param_bounds )
+                    except:
+                        res.success = False
 
                     if not res.success:
-                        param_bounds=( (.1,np.min(self.obs_dict[reach]['h'])-0.1),(max_H_obs-1.,max_H_obs+1.)   )
-                        res = optimize.minimize(fun=self.momma_objfun,
-                                        x0=init_params,
-                                        args=(self.obs_dict[reach],qbar,q33,aux_var ),
-                                        bounds=param_bounds )
+                        try:
+                            param_bounds=( (.1,np.min(self.obs_dict[reach]['h'])-0.1),(max_H_obs-1.,max_H_obs+1.)   )
+
+
+                            res = optimize.minimize(fun=self.momma_objfun,
+                                            x0=init_params,
+                                            args=(self.obs_dict[reach],qbar,q33,aux_var ),
+                                            bounds=param_bounds )
+                        except:
+                            pass
                     if not res.success:
                         print('Could not estimate MOMMA flow law parameters to fit MOI flow estimates. Revert to reach-scale FLPE estimates')
-                        param_est=( self.alg_dict['momma'][reach]['B'], self.alg_dict['momma'][reach]['H'] )
+                        param_est= self.alg_dict['momma'][reach]['B'], self.alg_dict['momma'][reach]['H']
                     else:
                         param_est=res.x
 

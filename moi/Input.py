@@ -97,7 +97,8 @@ class Input:
                     self.sos_dict[reach]['overwritten_source']=overwritten_source[k]
                 else:
                     self.sos_dict[reach]['overwritten_indices']=np.nan
-            except:
+            except Exception as e:
+                print(e)
                 print(f'reach data not found for {reach}')
                 # self.sos_dict[reach]={}
                 # self.sos_dict[reach]['Qbar']=np.nan
