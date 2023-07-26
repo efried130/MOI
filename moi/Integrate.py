@@ -135,13 +135,11 @@ class Integrate:
 
          for reach in self.basin_dict['reach_ids']:
              reach=np.int64(reach)
-             print('working on this reach', reach)
              k=np.argwhere(self.sword_dict['reach_id'] == reach)
              k=k[0,0]
     
              # extract reach dictionary for reach k
-             sword_data_reach=self.pull_sword_attributes_for_reach(k)
-             print('sd', sword_data_reach)   
+             sword_data_reach=self.pull_sword_attributes_for_reach(k) 
 
              #1 try adding the upstream junction
              junction_up=dict()    
