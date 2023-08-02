@@ -535,8 +535,9 @@ class Integrate:
 
                    Qintegrator=res.x
                    stdQc_rel=self.compute_integrator_uncertainty(alg,m,n,sigQ,Qintegrator,FLPE_Uncertainty,UncertaintyMethod,G)
-                   if stdQc_rel == False:
-                    res.success = False
+                   if type(stdQc_rel) == bool:
+                    if stdQc_rel == False:
+                        res.success = False
                    if not res.success:
                        print('Optimization failed for ', alg)
                        if self.VerboseFlag: 
