@@ -81,7 +81,7 @@ def main():
         index_to_run=-235
 
     #data directories
-    if index_to_run == -235:
+    if index_to_run == -235 or type(os.environ.get("AWS_BATCH_JOB_ID")) != type(None):
         INPUT_DIR = Path("/mnt/data/input")
         FLPE_DIR = Path("/mnt/data/flpe")
         OUTPUT_DIR = Path("/mnt/data/output")
