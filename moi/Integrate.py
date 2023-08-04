@@ -934,3 +934,48 @@ class Integrate:
 
           #2 compute optimal parameters for each algorithm's flow law
           self.compute_FLPs()
+
+     def integrate_prior(self):
+          """Mimic the integrate function but apply only to the prior data"""
+
+          FLPE_Uncertainty=0.4
+          Gage_Uncertainty=0.05
+
+          #0 create list of junctions, and figure out problem dimensions
+          #0.1 remove type 4 reaches from topology
+          self.RemoveDamReaches()
+          #0.2 create junction list
+          self.CreateJunctionList()
+
+          #0.3 set number of flow levels to run
+          FlowLevels=['Mean']
+
+          #0.4 get sizes of the matrix sizes m & n
+          m=0 #number of junctions
+          for junction in self.junctions:
+              m+=1
+              junction['row_num']=m-1
+
+          n=0 #number of reaches
+          #for reach in reaches:
+          for reach in self.basin_dict['reach_ids']:
+              n+=1
+
+          if self.VerboseFlag:
+              print('Number of junctions = ',m)
+              print('Number of reaches= ',n)
+
+
+          #1 integration calculations
+          for FlowLevel in FlowLevels:
+              if self.VerboseFlag:
+                  print('Running flow level',FlowLevel)
+              residuals={}
+              for alg in self.alg_dict:
+                  residuals[alg]=np.full((n,),np.nan)
+              niter=3
+              for i in range(0,niter):
+                  if self.VerboseFlag:
+                       print('Running iteration',i)
+                  residuals=self.integrator_optimization_calcs(m,n,FLPE_Uncertainty,Gage_Uncertainty,FlowLevel,residuals)
+
