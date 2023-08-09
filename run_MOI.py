@@ -61,10 +61,18 @@ def get_basin_data(basin_json,index_to_run):
 
 def main():
 
+    print('basin file:',sys.argv[1])
+    print('verbose flag:',sys.argv[2])
+    print('branch:',sys.argv[3])
+    print('index:',sys.argv[4])
+
     # verbose 
     try: 
         VerboseFlag=sys.argv[2]
-        if VerboseFlag == '-v': Verbose=True
+        if VerboseFlag == '-v': 
+            Verbose=True
+        else:
+            Verbose=False
     except IndexError:
         Verbose=False
 
@@ -86,9 +94,9 @@ def main():
         FLPE_DIR = Path("/mnt/data/flpe")
         OUTPUT_DIR = Path("/mnt/data/output")
     else:
-        INPUT_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/mnt/input")
-        FLPE_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/mnt/flpe")
-        OUTPUT_DIR = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/paper_debug/moi_outputs_dev_unconstrained")
+        INPUT_DIR = Path("/home/mdurand_umass_edu/dev-confluence/mnt/input")
+        FLPE_DIR = Path("/home/mdurand_umass_edu/dev-confluence/mnt/flpe")
+        OUTPUT_DIR = Path("/home/mdurand_umass_edu/dev-confluence/mnt/moi")
 
     #basin data
     try:
