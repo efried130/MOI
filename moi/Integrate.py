@@ -788,11 +788,11 @@ class Integrate:
                with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
                     Bflpe=np.nanmean(self.alg_dict['momma'][reach]['B'])
-               Bmax=np.min(self.obs_dict[reach]['h'])-0.1
                if self.obs_dict[reach]['nt'] > 0:
                     with warnings.catch_warnings():
                          warnings.simplefilter("ignore", category=RuntimeWarning)
 
+                         Bmax=np.min(self.obs_dict[reach]['h'])-0.1
 
                          if not np.isnan(Bflpe):
                               init_params=(np.nanmean(self.alg_dict['momma'][reach]['B']), \
