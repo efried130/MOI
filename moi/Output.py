@@ -253,10 +253,10 @@ class Output:
         sword_src_file=self.sword_dir.joinpath(self.basin_dict['sword'])
 
         #during normal operations, write this out to the sword directory
-        sword_dest_file=self.sword_dir.joinpath(self.basin_dict['sword'].replace('.nc', '_moi.nc'))
+        #sword_dest_file=self.sword_dir.joinpath(self.basin_dict['sword'].replace('.nc', '_moi.nc'))
         
         #for debugging purposes, write this out to the output directory
-        #sword_dest_file=self.out_dir.joinpath(self.basin_dict['sword'].replace('.nc', '_moi.nc'))
+        sword_dest_file=self.out_dir.joinpath(self.basin_dict['sword'].replace('.nc', '_moi.nc'))
 
         shutil.copy(sword_src_file,sword_dest_file)
 
@@ -265,7 +265,7 @@ class Output:
         reaches = sword_dataset['reaches']['reach_id'][:]
 
         for reach in self.basin_dict['reach_ids']:
-            reach_ind = np.where(reaches == np.int(reach))
+            reach_ind = np.where(reaches == int(reach))
             #print(reach)
             #print(reach_ind)
  
