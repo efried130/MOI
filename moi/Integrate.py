@@ -660,7 +660,8 @@ class Integrate:
                     warnings.simplefilter("ignore", category=RuntimeWarning)
                     nhat=np.nanmean(self.alg_dict['geobam'][reach]['n'])
 
-               if self.obs_dict[reach]['nt'] > 0 :
+
+               if self.obs_dict[reach]['nt'] > 0 and self.obs_dict[reach]['dA'].size > 0:
                     
                     Abar_min=-min(self.obs_dict[reach]['dA'])+1
                     
@@ -704,9 +705,8 @@ class Integrate:
                     alphaflpe=np.nanmean(self.alg_dict['hivdi'][reach]['alpha'])
 
 
-               Abar_min=-min(self.obs_dict[reach]['dA'])+1
-
-               if self.obs_dict[reach]['nt'] > 0:
+               if self.obs_dict[reach]['nt'] > 0 and self.obs_dict[reach]['dA'].size > 0:
+                    Abar_min=-min(self.obs_dict[reach]['dA'])+1
                     if not np.isnan(alphaflpe):
                          with warnings.catch_warnings():
                               warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -747,10 +747,10 @@ class Integrate:
                     warnings.simplefilter("ignore", category=RuntimeWarning)
                     naflpe=np.nanmean(self.alg_dict['metroman'][reach]['na'])
 
-               Abar_min=-min(self.obs_dict[reach]['dA'])+1
 
-               if self.obs_dict[reach]['nt'] > 0:
+               if self.obs_dict[reach]['nt'] > 0 and self.obs_dict[reach]['dA'].size > 0:
                     with warnings.catch_warnings():
+                         Abar_min=-min(self.obs_dict[reach]['dA'])+1
                          if not np.isnan(naflpe):
                              warnings.simplefilter("ignore", category=RuntimeWarning)
                              init_params=(np.nanmean(self.alg_dict['metroman'][reach]['na']), \
@@ -869,11 +869,11 @@ class Integrate:
                     nflpe=np.nanmean(self.alg_dict['sad'][reach]['n'])
                #if self.obs_dict[reach]['nt'] > 0 and (not np.isnan(nflpe)):
 
-               Abar_min=-min(self.obs_dict[reach]['dA'])+1
 
-               if self.obs_dict[reach]['nt'] > 0:
+               if self.obs_dict[reach]['nt'] > 0 and self.obs_dict[reach]['dA'].size > 0:
                     with warnings.catch_warnings():
                          warnings.simplefilter("ignore", category=RuntimeWarning)
+                         Abar_min=-min(self.obs_dict[reach]['dA'])+1
                          if not np.isnan(nflpe):
                              init_params=(np.nanmean(self.alg_dict['sad'][reach]['n']), \
                                   np.nanmean(self.alg_dict['sad'][reach]['a0']))
@@ -912,11 +912,12 @@ class Integrate:
                     nflpe=np.nanmean(self.alg_dict['sic4dvar'][reach]['n'])
                #if self.obs_dict[reach]['nt'] > 0 and (not np.isnan(nflpe)):
 
-               Abar_min=-min(self.obs_dict[reach]['dA'])+1
 
-               if self.obs_dict[reach]['nt'] > 0 :
+               if self.obs_dict[reach]['nt'] > 0 and self.obs_dict[reach]['dA'].size > 0:
                     with warnings.catch_warnings():
                          warnings.simplefilter("ignore", category=RuntimeWarning)
+
+                         Abar_min=-min(self.obs_dict[reach]['dA'])+1
                          if not np.isnan(nflpe):
                               init_params=(np.nanmean(self.alg_dict['sic4dvar'][reach]['n']), \
                                    np.nanmean(self.alg_dict['sic4dvar'][reach]['a0']))
