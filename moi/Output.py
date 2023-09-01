@@ -251,7 +251,13 @@ class Output:
            """
 
         sword_src_file=self.sword_dir.joinpath(self.basin_dict['sword'])
+
+        #during normal operations, write this out to the sword directory
         sword_dest_file=self.sword_dir.joinpath(self.basin_dict['sword'].replace('.nc', '_moi.nc'))
+        
+        #for debugging purposes, write this out to the output directory
+        #sword_dest_file=self.out_dir.joinpath(self.basin_dict['sword'].replace('.nc', '_moi.nc'))
+
         shutil.copy(sword_src_file,sword_dest_file)
 
         sword_dataset = Dataset(sword_dest_file,'a')
@@ -259,7 +265,7 @@ class Output:
         reaches = sword_dataset['reaches']['reach_id'][:]
 
         for reach in self.basin_dict['reach_ids']:
-            reach_ind = np.where(reaches == np.int(reach))
+            reach_ind = np.where(reaches == int(reach))
             #print(reach)
             #print(reach_ind)
  
@@ -304,7 +310,12 @@ class Output:
                 self.alg_dict['sad'][reach]['integrator']['n']
             sword_dataset['reaches']['discharge_models'][branch]['SADS']['sbQ_rel'][reach_ind]= \
                 self.alg_dict['sad'][reach]['integrator']['sbQ_rel']
-            #6 sicvdvar - note this is not included in SWORD v11 - so can't add these, at the moment
- 
+            #6 sicvdvar  
+            sword_dataset['reaches']['discharge_models'][branch]['SIC4DVar']['Abar'][reach_ind]= \
+                self.alg_dict['sic4dvar'][reach]['integrator']['a0']
+            sword_dataset['reaches']['discharge_models'][branch]['SIC4DVar']['n'][reach_ind]= \
+                self.alg_dict['sic4dvar'][reach]['integrator']['n']
+            sword_dataset['reaches']['discharge_models'][branch]['SIC4DVar']['sbQ_rel'][reach_ind]= \
+                self.alg_dict['sic4dvar'][reach]['integrator']['sbQ_rel']
 
         sword_dataset.close()
