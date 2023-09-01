@@ -64,7 +64,10 @@ def main():
     print('basin file:',sys.argv[1])
     print('verbose flag:',sys.argv[2])
     print('branch:',sys.argv[3])
-    print('index:',sys.argv[4])
+    try:
+        print('index:',sys.argv[4])
+    except:
+        print('running on AWS index')
 
     # verbose 
     try: 
