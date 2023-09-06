@@ -463,10 +463,16 @@ class Integrate:
                         datasource.append('Gage')
                     else:
                         if FlowLevel == 'Mean':
-                            Qbar[i]=self.alg_dict[alg][reach]['qbar']
+                            if np.ma.is_masked(self.alg_dict[alg][reach]['qbar']):
+                                Qbar[i]=np.nan
+                            else:
+                                Qbar[i]=self.alg_dict[alg][reach]['qbar']
                         elif FlowLevel == 'q33':
                             try:
-                                Qbar[i]=self.alg_dict[alg][reach]['q33']
+                                if np.ma.is_masked(self.alg_dict[alg][reach]['q33']):
+                                    Qbar[i]=np.nan
+                                else:
+                                    Qbar[i]=self.alg_dict[alg][reach]['q33']
                             except:
                                 print('did not find q33. reach=',reach)
                                 Qbar[i]=np.nan
@@ -526,7 +532,9 @@ class Integrate:
  
                # solve integrator problem
                cons_massbalance=optimize.LinearConstraint(G,np.zeros(m,),np.zeros(m,))
-               cons_positive=optimize.LinearConstraint(np.eye(n),np.zeros(n,),np.ones(n,)*bignumber)
+               Qmin=0.
+               #cons_positive=optimize.LinearConstraint(np.eye(n),np.zeros(n,),np.ones(n,)*bignumber)
+               cons_positive=optimize.LinearConstraint(np.eye(n),np.ones(n,)*Qmin,np.ones(n,)*bignumber)
 
                #Two possible uncertainty methods, but only one fully implemented
                #UncertaintyMethod='Ensemble' #still experimental - also time-consuming
@@ -582,7 +590,9 @@ class Integrate:
      def compute_integrator_uncertainty(self,alg,m,n,sigQ,Qbar,FLPE_Uncertainty,UncertaintyMethod,G):
 
           # compute covariance matrix
-          sigQ=FLPE_Uncertainty*Qbar #a little unsure about this bit...
+          sigQ=FLPE_Uncertainty*Qbar 
+          sigQmin=1.
+          np.clip(sigQ,sigQmin,np.inf,out=sigQ) #prevent any zero values in sigQ
           sigQv=np.reshape(sigQ,(n,1))
           rho=0.7
           covQ = np.matmul(sigQv,  sigQv.transpose()) * (rho* np.ones((n,n)) + (np.eye(n)-rho*np.eye(n) )   )  
@@ -622,6 +632,7 @@ class Integrate:
               covQb=Pc[0:n,0:n] #covariance matrix of reach errors
 
               stdQc=np.sqrt(np.diagonal(covQb))
+              np.clip(Qbar,1.,np.inf,out=Qbar) #limit Qbar here to avoid divide by zero 
               stdQc_rel=stdQc/Qbar
 
           return stdQc_rel 
@@ -716,7 +727,7 @@ class Integrate:
                     else:
                           init_params=(33.3,1.0,Abar_min+10.)
                     #param_bounds=( (0.001,np.inf),(-1e2,1e2),(-min(self.obs_dict[reach]['dA'])+1,np.inf))
-                    param_bounds=( (0.001,np.inf),(-1e2,1e2),(Abar_min,np.inf))
+                    param_bounds=( (0.001,np.inf),(-1e1,1.e1),(Abar_min,np.inf))
                     qbar=self.alg_dict['hivdi'][reach]['integrator']['qbar']
                     if 'q33' in self.alg_dict['hivdi'][reach]['integrator']:
                         q33=self.alg_dict['hivdi'][reach]['integrator']['q33']
