@@ -309,10 +309,12 @@ class Integrate:
      def metroman_objfun(self,params,obs,qbar_target,q33_target): 
           q=self.metroman_flowlaw(params,obs)
           qbar=np.nanmean(q)
-          y=(qbar-qbar_target)**2
+          #y=(qbar-qbar_target)**2
+          y=abs(qbar-qbar_target)
           if not np.isnan(q33_target):
              q33_alg=np.nanquantile(q,.33)
-             y+=(q33_alg-q33_target)**2 
+             #y+=(q33_alg-q33_target)**2 
+             y+=abs(q33_alg-q33_target)
           return y
 
      def metroman_flowlaw(self,params,obs):
@@ -665,8 +667,9 @@ class Integrate:
 
      def compute_FLPs(self):
           #2.1 geobam   
+          print('CALCULATING GeoBAM FLPs')
           for reach in self.alg_dict['geobam']:
-               print('CALCULATING FLPs:',reach)
+               #print('CALCULATING FLPs:',reach)
                with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
                     nhat=np.nanmean(self.alg_dict['geobam'][reach]['n'])
@@ -703,12 +706,13 @@ class Integrate:
 
 
                else: 
-                    print('geobam FLP calcs failed, reach',reach)
+                    #print('geobam FLP calcs failed, reach',reach)
                     self.alg_dict['geobam'][reach]['integrator']['n']=np.nan
                     self.alg_dict['geobam'][reach]['integrator']['a0']=np.nan
                     self.alg_dict['geobam'][reach]['integrator']['q']=np.full( (1,self.obs_dict[reach]['nt']),np.nan)
 
           #2.2 hivdi
+          print('CALCULATING HiVDI FLPs')
           for reach in self.alg_dict['hivdi']:
 
                with warnings.catch_warnings():
@@ -753,6 +757,7 @@ class Integrate:
 
 
           #2.3 MetroMan
+          print('CALCULATING MetroMan FLPs')
           for reach in self.alg_dict['metroman']:
                with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -770,7 +775,7 @@ class Integrate:
                          else:
                              init_params=(0.03,-1.,Abar_min+10.)
                     #param_bounds=( (0.001,np.inf),(-1e2,1e2),(-min(self.obs_dict[reach]['dA'])+1,np.inf))
-                    param_bounds=( (0.001,np.inf),(-1e2,1e2),(Abar_min,np.inf))
+                    param_bounds=( (0.001,np.inf),(-1e1,1e1),(Abar_min,np.inf))
                     qbar=self.alg_dict['metroman'][reach]['integrator']['qbar']
                     if 'q33' in self.alg_dict['metroman'][reach]['integrator']:
                         q33=self.alg_dict['metroman'][reach]['integrator']['q33']
@@ -794,8 +799,10 @@ class Integrate:
                     self.alg_dict['metroman'][reach]['integrator']['q']=np.full((1,self.obs_dict[reach]['nt']),np.nan)
 
           #2.4 MOMMA
+          print('CALCULATING MOMMA FLPs')
           # params are (B,HB) == (river bottom elevation, bankfull elevation)
           for reach in self.alg_dict['momma']:
+               #print('.... calculating MOMMA FLPs for reach',reach)
                with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
                     Bflpe=np.nanmean(self.alg_dict['momma'][reach]['B'])
@@ -857,7 +864,8 @@ class Integrate:
                         except:
                             pass
                     if not res.success:
-                        print('Could not estimate MOMMA flow law parameters to fit MOI flow estimates for reach ',reach,'. Revert to reach-scale FLPE estimates')
+                        print('Could not estimate MOMMA flow law parameters to fit MOI flow estimates for reach ',reach,\
+                                '. Revert to reach-scale FLPE estimates')
                         param_est= self.alg_dict['momma'][reach]['B'], self.alg_dict['momma'][reach]['H']
                     else:
                         param_est=res.x
@@ -874,6 +882,7 @@ class Integrate:
                     self.alg_dict['momma'][reach]['integrator']['q']=np.full( (1,self.obs_dict[reach]['nt']),np.nan)
 
           #2.5 SAD
+          print('CALCULATING SAD FLPs')
           for reach in self.alg_dict['sad']:
                with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -917,6 +926,7 @@ class Integrate:
                     self.alg_dict['sad'][reach]['integrator']['q']=np.full( (1,self.obs_dict[reach]['nt']),np.nan)
 
           #2.6 SIC4DVar
+          print('CALCULATING SIC4DVar FLPs')
           for reach in self.alg_dict['sic4dvar']:
                with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
