@@ -1,5 +1,6 @@
 #Standard imports
 import warnings
+import sys
 
 # Third-party imports
 import numpy as np
@@ -133,7 +134,8 @@ class Integrate:
          # create list of junctions
          self.junctions=list()
 
-         for reach in self.basin_dict['reach_ids']:
+         #for reach in self.basin_dict['reach_ids']:
+         for reach in self.basin_dict['reach_ids_all']:
              reach=np.int64(reach)
              k=np.argwhere(self.sword_dict['reach_id'] == reach)
              k=k[0,0]
@@ -167,8 +169,9 @@ class Integrate:
                      junction_up['downflows'].append(sword_data_reach_up['rch_id_dn'][j] )
 
                  AlreadyExists,AllReachesInReachFile=self.ChecksPriorToAddingJunction(junction_up)
-        
-                 if not AlreadyExists and AllReachesInReachFile:
+
+                 #if not AlreadyExists and AllReachesInReachFile:
+                 if not AlreadyExists:
                      self.junctions.append(junction_up)
 
              #2 try adding the downstream junction
@@ -198,7 +201,15 @@ class Integrate:
 
                  AlreadyExists,AllReachesInReachFile=self.ChecksPriorToAddingJunction(junction_dn)
 
-                 if not AlreadyExists and AllReachesInReachFile:
+                 if junction_dn['upflows']==[0]:
+                     print('gotcha!')
+                     print('junction=',junction_dn)
+                     print('kdn=',kdn)
+                     print('junction down=',junction_dn['downflows'][0])
+                     print(self.sword_dict['reach_id'][kdn])
+
+                 #if not AlreadyExists and AllReachesInReachFile:
+                 if not AlreadyExists:
                      self.junctions.append(junction_dn) 
 
      def RemoveDamReaches(self):
@@ -444,7 +455,7 @@ class Integrate:
           residuals={}
           self.GoodFLPE={}
 
-          #1 compute "integrated" discharge. 
+          #1. compute "integrated" discharge. 
           for alg in self.alg_dict:
                print('    RUNNING MOI for ',alg)
                self.GoodFLPE[alg]=True
@@ -452,39 +463,51 @@ class Integrate:
                sigQ=np.empty([n,])
                datasource=[]
                i=0
-               for reach in self.alg_dict[alg]:
+               #for reach in self.alg_dict[alg]:
 
-                    # if this reach is gaged using the mean flow in the sos, rather than the algorithm
-                    if (self.Branch == 'constrained') and (self.sos_dict[reach]['overwritten_indices']==1): 
-                        if FlowLevel == 'Mean':
-                            Qbar[i]=self.sos_dict[reach]['Qbar']
-                        elif FlowLevel == 'q33':
-                            Qbar[i]=self.sos_dict[reach]['q33']
+               reaches_in_alg=self.alg_dict[alg].keys()
 
-                        sigQ[i]=Qbar[i]*Gage_Uncertainty
-                        datasource.append('Gage')
-                    else:
-                        if FlowLevel == 'Mean':
-                            if np.ma.is_masked(self.alg_dict[alg][reach]['qbar']):
-                                Qbar[i]=np.nan
-                            else:
-                                Qbar[i]=self.alg_dict[alg][reach]['qbar']
-                        elif FlowLevel == 'q33':
-                            try:
-                                if np.ma.is_masked(self.alg_dict[alg][reach]['q33']):
-                                    Qbar[i]=np.nan
-                                else:
-                                    Qbar[i]=self.alg_dict[alg][reach]['q33']
-                            except:
-                                print('did not find q33. reach=',reach)
-                                Qbar[i]=np.nan
+               for reach in self.basin_dict['reach_ids_all']:
+                  if reach in self.alg_dict[alg].keys():
 
-                        if np.isnan(PreviousResiduals[alg][i]):
-                            sigQ[i]=Qbar[i]*FLPE_Uncertainty
-                        else:
-                            sigQ[i]=abs(PreviousResiduals[alg][i])
-                        datasource.append('FLPE')
-                    i+=1
+                      # if this reach is gaged using the mean flow in the sos, rather than the algorithm
+                      if (self.Branch == 'constrained') and (self.sos_dict[reach]['overwritten_indices']==1): 
+                          if FlowLevel == 'Mean':
+                              Qbar[i]=self.sos_dict[reach]['Qbar']
+                          elif FlowLevel == 'q33':
+                              Qbar[i]=self.sos_dict[reach]['q33']
+
+                          sigQ[i]=Qbar[i]*Gage_Uncertainty
+                          datasource.append('Gage')
+                      else:
+                          if FlowLevel == 'Mean':
+                              if np.ma.is_masked(self.alg_dict[alg][reach]['qbar']):
+                                  Qbar[i]=np.nan
+                              else:
+                                  Qbar[i]=self.alg_dict[alg][reach]['qbar']
+                          elif FlowLevel == 'q33':
+                              try:
+                                  if np.ma.is_masked(self.alg_dict[alg][reach]['q33']):
+                                      Qbar[i]=np.nan
+                                  else:
+                                      Qbar[i]=self.alg_dict[alg][reach]['q33']
+                              except:
+                                  print('did not find q33. reach=',reach)
+                                  Qbar[i]=np.nan
+  
+                          if np.isnan(PreviousResiduals[alg][i]):
+                              sigQ[i]=Qbar[i]*FLPE_Uncertainty
+                          else:
+                              sigQ[i]=abs(PreviousResiduals[alg][i])
+                          datasource.append('FLPE')
+                  else:
+                       Qbar[i]=np.nan
+                       sigQ[i]=np.nan
+                       datasource.append('None')
+                  i+=1
+
+               if self.VerboseFlag:
+                  print('assigned',i,'values of Qbar')
 
                # this handles accidental nans still in the flow estimates
                #   setting to zero should let these get reset
@@ -503,6 +526,9 @@ class Integrate:
                    self.GoodFLPE[alg]=False
                else:
                    FLPE_Data_OK=True
+               
+               if self.VerboseFlag:
+                   print('FLPE data are ok (True or False):',FLPE_Data_OK)
       
 
                #define G matrix
@@ -516,7 +542,8 @@ class Integrate:
                             kup=self.basin_dict['reach_ids'].index(str(upflow))
                             upcols.append(kup)
                        except: 
-                            print('did not find that one')
+                           print('did not find reach:',upflow)
+                           print('... in junction',junction)
 
                    downcols=list()
                    for downflow in junction['downflows']:
@@ -524,7 +551,8 @@ class Integrate:
                             kdn=self.basin_dict['reach_ids'].index(str(downflow))
                             downcols.append(kdn)
                        except:
-                            print('did not find that one')
+                            print('did not find reach',downflow)
+                            print('... in junction',junction)
     
                    for upcol in upcols:
                        G[row,upcol]=1
@@ -567,24 +595,27 @@ class Integrate:
                    else:
                        residuals[alg]=np.full((n,),np.nan)
 
-               # save data
-               i=0
-               for reach in self.alg_dict[alg]:
-                    if 'integrator' not in self.alg_dict[alg][reach]:
-                        self.alg_dict[alg][reach]['integrator']={}
-                        self.alg_dict[alg][reach]['integrator']['qbar']=np.nan
-                        self.alg_dict[alg][reach]['integrator']['sbQ_rel']=np.nan
-                    if FlowLevel == 'Mean':
-                        self.alg_dict[alg][reach]['integrator']['qbar']=Qintegrator[i]
-                        if res.success:
-                            self.alg_dict[alg][reach]['integrator']['sbQ_rel']=stdQc_rel[i]
-                        else:
-                            warnings.warn('Topology probelm encountered, using prior uncertainty for sbQ_rel')
-                            self.alg_dict[alg][reach]['integrator']['sbQ_rel']=Qbar[i]*FLPE_Uncertainty
+                   #sys.exit('stopping at dev point')
 
-                    elif FlowLevel == 'q33':
-                        self.alg_dict[alg][reach]['integrator']['q33']=Qintegrator[i]
-                    i+=1
+               #2. save data
+               i=0
+               for reach in self.basin_dict['reach_ids_all']:
+                   if reach in self.alg_dict[alg].keys():
+                       if 'integrator' not in self.alg_dict[alg][reach]:
+                           self.alg_dict[alg][reach]['integrator']={}
+                           self.alg_dict[alg][reach]['integrator']['qbar']=np.nan
+                           self.alg_dict[alg][reach]['integrator']['sbQ_rel']=np.nan
+                       if FlowLevel == 'Mean':
+                           self.alg_dict[alg][reach]['integrator']['qbar']=Qintegrator[i]
+                           if res.success:
+                               self.alg_dict[alg][reach]['integrator']['sbQ_rel']=stdQc_rel[i]
+                           else:
+                               warnings.warn('Topology probelm encountered, using prior uncertainty for sbQ_rel')
+                               self.alg_dict[alg][reach]['integrator']['sbQ_rel']=Qbar[i]*FLPE_Uncertainty
+
+                       elif FlowLevel == 'q33':
+                           self.alg_dict[alg][reach]['integrator']['q33']=Qintegrator[i]
+                   i+=1
 
 
           return residuals
@@ -972,7 +1003,7 @@ class Integrate:
 
           #0 create list of junctions, and figure out problem dimensions
           #0.1 remove type 4 reaches from topology
-          self.RemoveDamReaches()
+          #self.RemoveDamReaches()
           #0.2 create junction list
           self.CreateJunctionList()
 
@@ -1017,7 +1048,7 @@ class Integrate:
 
           #0 create list of junctions, and figure out problem dimensions
           #0.1 remove type 4 reaches from topology
-          self.RemoveDamReaches()
+          #self.RemoveDamReaches()
           #0.2 create junction list
           self.CreateJunctionList()       
 
@@ -1034,7 +1065,7 @@ class Integrate:
     
           n=0 #number of reaches
           #for reach in reaches:
-          for reach in self.basin_dict['reach_ids']:
+          for reach in self.basin_dict['reach_ids_all']:
               n+=1
 
           if self.VerboseFlag:

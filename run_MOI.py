@@ -58,6 +58,33 @@ def get_basin_data(basin_json,index_to_run):
             "sword": data["sword"]
         }
 
+def get_all_sword_reach_in_basin(input,Verbose):
+
+    # find all those that match the basin id 
+    BasinLevel=len(str(input.basin_dict['basin_id']))
+
+    # basin_reach_list_all includes all reaches in SWORD that match the current basin id
+    basin_reach_list_all=[]
+    for reachid in input.sword_dict['reach_id']:
+        reachidstr=str(reachid)
+        if reachidstr[0:BasinLevel] == str(input.basin_dict['basin_id']):
+            basin_reach_list_all.append(reachid)
+
+    nadd=0
+    input.basin_dict['reach_ids_all']=[]
+    for reachid in basin_reach_list_all:
+        if str(reachid) not in input.basin_dict['reach_ids']:
+            if Verbose:
+               print('reachid',reachid,'is not in basin json file, but is in SWORD.')
+            nadd+=1
+        input.basin_dict['reach_ids_all'].append(str(reachid))
+
+    if Verbose:
+       print('Total of ',nadd, 'reaches in SWORD that were not in basin json')
+
+
+    return input 
+
 
 def main():
 
@@ -103,7 +130,9 @@ def main():
 
     #basin data
     try:
-        basin_json = INPUT_DIR.joinpath(sys.argv[1])
+        #basin_json = INPUT_DIR.joinpath(sys.argv[1])
+        basin_json = Path("/home/mdurand_umass_edu/dev-confluence/mnt/").joinpath(sys.argv[1])
+        print('Using',basin_json)           
     except IndexError:
         basin_json = INPUT_DIR.joinpath("basin.json") 
 
@@ -118,6 +147,9 @@ def main():
     input.extract_alg()
     input.extract_swot()
     input.extract_sword()
+
+    # add something here to force it to run on all reaches in SWORD that match this level 2
+    input=get_all_sword_reach_in_basin(input,Verbose)
 
     integrate = Integrate(input.alg_dict, input.basin_dict, input.sos_dict, input.sword_dict,input.obs_dict,Branch,Verbose)
     integrate.integrate()
