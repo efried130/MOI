@@ -7,6 +7,9 @@ import os
 from pathlib import Path
 import sys
 
+# Third-party imports
+import numpy as np
+
 # Local imports
 from moi.Input import Input
 from moi.Integrate import Integrate
@@ -85,6 +88,35 @@ def get_all_sword_reach_in_basin(input,Verbose):
 
     return input 
 
+def apply_sword_patches(input,Verbose):
+    patch_json = Path("/home/mdurand_umass_edu/dev-confluence/mnt/").joinpath('sword_patches_v215.json')
+    with open(patch_json) as json_file:
+        patch_data = json.load(json_file)
+
+    reaches_to_patch=list(patch_data['reach_data'].keys())
+
+    if Verbose:
+        print('Read in patches for:',len(reaches_to_patch))
+        print('... for reaches: ',list(reaches_to_patch))
+
+    for reachid in reaches_to_patch:
+        k=np.argwhere(input.sword_dict['reach_id'][:]==np.int64(reachid))
+        k=k[0,0]
+
+        for data_element in patch_data['reach_data'][reachid]:
+            if data_element != 'metadata':
+                if Verbose:
+                   print('In the patch:',patch_data['reach_data'][reachid][data_element])
+                   print('In SWORD:',input.sword_dict[data_element][:,k])
+
+                # apply patch
+                input.sword_dict[data_element][:,k]=patch_data['reach_data'][reachid][data_element]
+                
+                if Verbose:
+                   print('In SWORD after fix:',input.sword_dict[data_element][:,k])
+
+    return input
+
 
 def main():
 
@@ -148,7 +180,10 @@ def main():
     input.extract_swot()
     input.extract_sword()
 
-    # add something here to force it to run on all reaches in SWORD that match this level 2
+    # apply SWORD patches
+    input=apply_sword_patches(input,Verbose)
+
+    # make integrator run on all reaches in SWORD that match basin code in basin json
     input=get_all_sword_reach_in_basin(input,Verbose)
 
     integrate = Integrate(input.alg_dict, input.basin_dict, input.sos_dict, input.sword_dict,input.obs_dict,Branch,Verbose)
