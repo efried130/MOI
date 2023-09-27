@@ -252,11 +252,12 @@ class Output:
 
         sword_src_file=self.sword_dir.joinpath(self.basin_dict['sword'])
 
-        #during normal operations, write this out to the sword directory
-        sword_dest_file=self.sword_dir.joinpath(self.basin_dict['sword'].replace('.nc', '_moi.nc'))
-        
-        #for debugging purposes, write this out to the output directory
-        #sword_dest_file=self.out_dir.joinpath(self.basin_dict['sword'].replace('.nc', '_moi.nc'))
+        if self.out_dir == '/mnt/data/output':
+            #during normal operations, write this out to the sword directory
+            sword_dest_file=self.sword_dir.joinpath(self.basin_dict['sword'].replace('.nc', '_moi.nc'))
+        else:
+            print('for debugging purposes, write FLPs to the output directory rather than sword directory')
+            sword_dest_file=self.out_dir.joinpath(self.basin_dict['sword'].replace('.nc', '_moi.nc'))
 
         shutil.copy(sword_src_file,sword_dest_file)
 
