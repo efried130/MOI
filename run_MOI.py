@@ -73,6 +73,10 @@ def get_all_sword_reach_in_basin(input,Verbose):
         if reachidstr[0:BasinLevel] == str(input.basin_dict['basin_id']):
             basin_reach_list_all.append(reachid)
 
+    if Verbose:
+        print('There are a total of',len(basin_reach_list_all),'reaches in SWORD for this basin')
+
+    # create reach_ids_all list
     nadd=0
     input.basin_dict['reach_ids_all']=[]
     for reachid in basin_reach_list_all:
@@ -85,10 +89,11 @@ def get_all_sword_reach_in_basin(input,Verbose):
     if Verbose:
        print('Total of ',nadd, 'reaches in SWORD that were not in basin json')
 
-
     return input 
 
 def apply_sword_patches(input,Verbose):
+    # this is included here to test custom patches. 
+    # not run as part of normal confluence runs
     patch_json = Path("/home/mdurand_umass_edu/dev-confluence/mnt/").joinpath('sword_patches_v215.json')
     with open(patch_json) as json_file:
         patch_data = json.load(json_file)
@@ -100,20 +105,49 @@ def apply_sword_patches(input,Verbose):
         print('... for reaches: ',list(reaches_to_patch))
 
     for reachid in reaches_to_patch:
-        k=np.argwhere(input.sword_dict['reach_id'][:]==np.int64(reachid))
-        k=k[0,0]
+       
+        try:
+            k=np.argwhere(input.sword_dict['reach_id'][:]==np.int64(reachid))
+            k=k[0,0]
+        except: 
+            if Verbose:
+                print(reachid , 'is not in this domain. not patching')
+            continue
+
+        if Verbose:
+           print('Patching reach:',reachid)
 
         for data_element in patch_data['reach_data'][reachid]:
+
             if data_element != 'metadata':
-                if Verbose:
-                   print('In the patch:',patch_data['reach_data'][reachid][data_element])
-                   print('In SWORD:',input.sword_dict[data_element][:,k])
+
+                if data_element == 'n_rch_up' or data_element == 'n_rch_down':
+                    data_type='scalar'
+                elif data_element == 'rch_id_up' or data_element == 'rch_id_dn':
+                     data_type='vector'
+                else:
+                     print('unknown data type found in patch! crash imminent...')
+
+                #if Verbose:
+                   #print('  Patching data element:',data_element)
+                   #print('    In the patch:',patch_data['reach_data'][reachid][data_element])
+                   #if data_type == 'vector':
+                   #    print('    In SWORD:',input.sword_dict[data_element][:,k])
+                   #elif data_type == 'scalar':
+                   #    print('    In SWORD:',input.sword_dict[data_element][k])
 
                 # apply patch
-                input.sword_dict[data_element][:,k]=patch_data['reach_data'][reachid][data_element]
+                if data_type=='vector':
+                    input.sword_dict[data_element][:,k]=patch_data['reach_data'][reachid][data_element]
+                elif data_type=='scalar':
+                    input.sword_dict[data_element][k]=patch_data['reach_data'][reachid][data_element]
+
                 
-                if Verbose:
-                   print('In SWORD after fix:',input.sword_dict[data_element][:,k])
+                #if Verbose:
+                #   if data_type=='vector':
+                #       print('    In SWORD after fix:',input.sword_dict[data_element][:,k])
+                #   elif data_type=='scalar':
+                #       print('    In SWORD after fix:',input.sword_dict[data_element][k])
 
     return input
 
@@ -174,17 +208,12 @@ def main():
     print('Running ',Branch,' branch.')
 
     input = Input(FLPE_DIR, INPUT_DIR / "sos/", INPUT_DIR / "swot", INPUT_DIR / "sword", basin_data,Branch)
-
+    input.extract_sword()
+    #input=apply_sword_patches(input,Verbose)
+    input=get_all_sword_reach_in_basin(input,Verbose)
+    input.extract_swot()
     input.extract_sos()
     input.extract_alg()
-    input.extract_swot()
-    input.extract_sword()
-
-    # apply SWORD patches
-    input=apply_sword_patches(input,Verbose)
-
-    # make integrator run on all reaches in SWORD that match basin code in basin json
-    input=get_all_sword_reach_in_basin(input,Verbose)
 
     integrate = Integrate(input.alg_dict, input.basin_dict, input.sos_dict, input.sword_dict,input.obs_dict,Branch,Verbose)
     integrate.integrate()

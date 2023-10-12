@@ -57,7 +57,58 @@ class Output:
 
         fillvalue = -999999999999
 
-        for reach in self.basin_dict['reach_ids']:
+        for reach in self.basin_dict['reach_ids_all']:
+
+             # just write out the steady flow discharge values if this was an unobserved reach
+             if reach not in self.basin_dict['reach_ids']:
+                # NetCDF file creation
+                out_file = self.out_dir / f"{reach}_integrator.nc"
+                out = Dataset(out_file, 'w', format="NETCDF4")
+                out.production_date = datetime.now().strftime('%d-%b-%Y %H:%M:%S')
+
+                #1 geobam
+                gb = out.createGroup("geobam")
+                gb_qbar_stage2  = out.createVariable("geobam/qbar_basinScale", "f8", fill_value=fillvalue)
+                gb_qbar_stage2[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
+                gb_sbQ_rel = out.createVariable("geobam/sbQ_rel", "f8", fill_value=fillvalue)
+                gb_sbQ_rel[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['integrator']['sbQ_rel'], copy=True, nan=fillvalue)
+
+                #2 hivdi
+                hv = out.createGroup("hivdi")
+                hv_qbar_stage2  = out.createVariable("hivdi/qbar_basinScale", "f8", fill_value=fillvalue)
+                hv_qbar_stage2[:] = np.nan_to_num(self.alg_dict['hivdi'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
+                hv_sbQ_rel = out.createVariable("hivdi/sbQ_rel", "f8", fill_value=fillvalue)
+                hv_sbQ_rel[:] = np.nan_to_num(self.alg_dict['hivdi'][reach]['integrator']['sbQ_rel'], copy=True, nan=fillvalue)
+
+                #3 metroman
+                mm = out.createGroup("metroman")
+                mm_qbar_stage2  = out.createVariable("metroman/qbar_basinScale", "f8", fill_value=fillvalue)
+                mm_qbar_stage2[:] = np.nan_to_num(self.alg_dict['metroman'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
+                mm_sbQ_rel = out.createVariable("metroman/sbQ_rel", "f8", fill_value=fillvalue)
+                mm_sbQ_rel[:] = np.nan_to_num(self.alg_dict['metroman'][reach]['integrator']['sbQ_rel'], copy=True, nan=fillvalue)
+
+                #4 momma
+                mo = out.createGroup("momma")
+                mo_qbar_stage2  = out.createVariable("momma/qbar_basinScale", "f8", fill_value=fillvalue)
+                mo_qbar_stage2[:] = np.nan_to_num(self.alg_dict['momma'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
+                mo_sbQ_rel = out.createVariable("momma/sbQ_rel", "f8", fill_value=fillvalue)
+                mo_sbQ_rel[:] = np.nan_to_num(self.alg_dict['momma'][reach]['integrator']['sbQ_rel'], copy=True, nan=fillvalue)
+
+                #5 sad
+                sad = out.createGroup("sad")
+                sad_qbar_stage2  = out.createVariable("sad/qbar_basinScale", "f8", fill_value=fillvalue)
+                sad_qbar_stage2[:] = np.nan_to_num(self.alg_dict['sad'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
+                sad_sbQ_rel = out.createVariable("sad/sbQ_rel", "f8", fill_value=fillvalue)
+                sad_sbQ_rel[:] = np.nan_to_num(self.alg_dict['sad'][reach]['integrator']['sbQ_rel'], copy=True, nan=fillvalue)
+
+                #6 sic
+                sic = out.createGroup("sic")
+                sic_qbar_stage2  = out.createVariable("sic/qbar_basinScale", "f8", fill_value=fillvalue)
+                sic_qbar_stage2[:] = np.nan_to_num(self.alg_dict['sic4dvar'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
+                sic_sbQ_rel = out.createVariable("sic/sbQ_rel", "f8", fill_value=fillvalue)
+                sic_sbQ_rel[:] = np.nan_to_num(self.alg_dict['sic4dvar'][reach]['integrator']['sbQ_rel'], copy=True, nan=fillvalue)
+                out.close()
+                continue
 
              iDelete=self.obs_dict[reach]['iDelete']
              shape_iDelete=np.shape(iDelete)
