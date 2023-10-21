@@ -57,7 +57,7 @@ class Output:
 
         fillvalue = -999999999999
 
-        for reach in self.basin_dict['reach_ids_all']:
+        for reach in self.basin_dict['reach_ids']:
 
              # just write out the steady flow discharge values if this was an unobserved reach
              if reach not in self.basin_dict['reach_ids']:
