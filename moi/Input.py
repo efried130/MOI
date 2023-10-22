@@ -84,7 +84,9 @@ class Input:
             overwritten_source=sos_dataset["model/overwritten_source"][:]
 
         self.sos_dict={}
-        for reach in self.basin_dict['reach_ids']:
+        n_not_found=0
+        #for reach in self.basin_dict['reach_ids']:
+        for reach in self.basin_dict['reach_ids_all']:
             try:
                 self.sos_dict[reach]={}
                 k=np.argwhere(sosreachids==np.int64(reach))
@@ -98,8 +100,9 @@ class Input:
                 else:
                     self.sos_dict[reach]['overwritten_indices']=np.nan
             except Exception as e:
-                print(e)
+                #print(e)
                 print(f'reach data not found for {reach}')
+                n_not_found+=1
                 # self.sos_dict[reach]={}
                 # self.sos_dict[reach]['Qbar']=np.nan
                 # #self.sos_dict[reach]['q67']=(sosfdc[k,6]+sosfdc[k,6])/2 #averages probability .31 and .36
@@ -108,6 +111,8 @@ class Input:
 
 
         sos_dataset.close()
+
+        #print('A total of ',n_not_found,' data not found')
 
     def extract_sword(self):
         """Extracts and stores SWORD data in sword_dict.
@@ -183,23 +188,35 @@ class Input:
         """Extracts and stores reach-level FLPE algorithm data in alg_dict."""
 
         reach_ids = self.basin_dict["reach_ids"]
+        reach_ids_all = self.basin_dict["reach_ids_all"]
  
-        for r_id in reach_ids:
+        #for r_id in reach_ids:
+        for r_id in reach_ids_all:
+            if r_id in reach_ids:
+                # for observed reaches in the domain
+                gb_file = self.alg_dir / "geobam" / f"{r_id}_geobam.nc"
+                hv_file = self.alg_dir / "hivdi" / f"{r_id}_hivdi.nc"
+                mo_file = self.alg_dir / "momma" / f"{r_id}_momma.nc"
+                sd_file = self.alg_dir / "sad" / f"{r_id}_sad.nc"
+                sv_file = self.alg_dir / "sic4dvar" / f"{r_id}_sic4dvar.nc"
+                #more robust os agnostic approach to finding files
+                mm_file = glob(os.path.join(self.alg_dir,"metroman", f"*{r_id}*_metroman.nc"))
 
-            gb_file = self.alg_dir / "geobam" / f"{r_id}_geobam.nc"
-            hv_file = self.alg_dir / "hivdi" / f"{r_id}_hivdi.nc"
-            mo_file = self.alg_dir / "momma" / f"{r_id}_momma.nc"
-            sd_file = self.alg_dir / "sad" / f"{r_id}_sad.nc"
-            sv_file = self.alg_dir / "sic4dvar" / f"{r_id}_sic4dvar.nc"
-            #more robust os agnostic approach to finding files
-            mm_file = glob(os.path.join(self.alg_dir,"metroman", f"*{r_id}*_metroman.nc"))
+                if not mm_file:
+                    mm_file=Path('dir/that/does/not/exist')  #this sets mm_file.exists() to false
+                else: 
+                    mm_file = Path(mm_file[0]) 
 
-            if not mm_file:
-                mm_file=Path('dir/that/does/not/exist')  #this sets mm_file.exists() to false
-            else: 
-                mm_file = Path(mm_file[0]) 
+                self.__extract_valid(r_id, gb_file, hv_file, mo_file, sd_file, mm_file, sv_file)
 
-            self.__extract_valid(r_id, gb_file, hv_file, mo_file, sd_file, mm_file, sv_file)
+            else:
+                #for unobserved reaches
+                algs=['geobam','hivdi','metroman','momma','sad','sic4dvar']
+                for alg in algs:
+                    self.alg_dict[alg][r_id] = {
+                        "s1-flpe-exists": False,
+                        "qbar": np.nan
+                        }
 
     def __extract_valid(self, r_id, gb_file, hv_file, mo_file, sd_file, mm_file, sv_file):
         """ Extract valid data from the output of each reach-level FLPE alg.
