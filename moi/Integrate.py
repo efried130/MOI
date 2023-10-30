@@ -448,6 +448,38 @@ class Integrate:
           qsic4dvar=np.reshape(qsic4dvar,(1,len(d_x_area)))
           return qsic4dvar
 
+     def calcG(self,m,n):
+        #define G matrix
+        G=np.zeros((m,n))
+
+        for junction in self.junctions:
+            row=junction['row_num']
+            upcols=list()
+            for upflow in junction['upflows']:
+                try:
+                     kup=self.basin_dict['reach_ids_all'].index(str(upflow))
+                     upcols.append(kup)
+                except: 
+                    print('did not find reach:',upflow)
+                    print('... in junction',junction)
+
+            downcols=list()
+            for downflow in junction['downflows']:
+                try:
+                     kdn=self.basin_dict['reach_ids_all'].index(str(downflow))
+                     downcols.append(kdn)
+                except:
+                     print('did not find reach',downflow)
+                     print('... in junction',junction)
+
+            for upcol in upcols:
+                G[row,upcol]=1
+            for downcol in downcols:
+                G[row,downcol]=-1
+
+        return G
+        
+
      def integrator_optimization_calcs(self,m,n,FLPE_Uncertainty,Gage_Uncertainty,FlowLevel,PreviousResiduals):
 
           #0 initialize dictionary of residuals, to be returned and passed back in for next iteration
@@ -516,8 +548,8 @@ class Integrate:
                Qbar[np.isinf(Qbar)]=0.
 
                #specify uncertainty
-               #bignumber=1e9
-               bignumber=1e2
+               bignumber=1e9
+               #bignumber=1e2
                # for any values of zero in FLPE Qbar, set uncertainty to a big number
                sigQ[Qbar==0]=bignumber
 
@@ -529,34 +561,9 @@ class Integrate:
                else:
                    FLPE_Data_OK=True
                
-               #define G matrix
-               G=np.zeros((m,n))
 
-               for junction in self.junctions:
-                   row=junction['row_num']
-                   upcols=list()
-                   for upflow in junction['upflows']:
-                       try:
-                            kup=self.basin_dict['reach_ids_all'].index(str(upflow))
-                            upcols.append(kup)
-                       except: 
-                           print('did not find reach:',upflow)
-                           print('... in junction',junction)
-
-                   downcols=list()
-                   for downflow in junction['downflows']:
-                       try:
-                            kdn=self.basin_dict['reach_ids_all'].index(str(downflow))
-                            downcols.append(kdn)
-                       except:
-                            print('did not find reach',downflow)
-                            print('... in junction',junction)
-    
-                   for upcol in upcols:
-                       G[row,upcol]=1
-                   for downcol in downcols:
-                       G[row,downcol]=-1
-
+               # the G matrix defines mass conservation points
+               G=self.calcG(m,n)
  
                # solve integrator problem
                cons_massbalance=optimize.LinearConstraint(G,np.zeros(m,),np.zeros(m,))
