@@ -57,7 +57,14 @@ class Output:
 
         fillvalue = -999999999999
 
-        for reach in self.basin_dict['reach_ids']:
+        if self.out_dir == '/mnt/data/output':
+            # normal confluence runs in AWS, just write out reaches we have swot data for
+            reaches_to_write=self.basin_dict['reach_ids']
+        else:
+            # offline runs,  it's nice to have the integrator values for reaches we do not have swot data for
+            reaches_to_write=self.basin_dict['reach_ids_all']
+
+        for reach in reaches_to_write:
 
              # just write out the steady flow discharge values if this was an unobserved reach
              if reach not in self.basin_dict['reach_ids']:
