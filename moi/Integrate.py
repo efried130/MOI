@@ -478,6 +478,80 @@ class Integrate:
                 G[row,downcol]=-1
 
         return G
+
+     def initialize_integration_vars(self,FLPE_Uncertainty,Gage_Uncertainty,alg,FlowLevel,PreviousResiduals,n):
+
+         self.GoodFLPE[alg]=True
+         Qbar=np.empty([n,])
+         sigQ=np.empty([n,])
+         datasource=[]
+         i=0
+
+         for reach in self.basin_dict['reach_ids_all']:
+            if reach in self.alg_dict[alg].keys():
+
+
+                if reach == '73120000521':
+                    print('reached reach',reach)
+                    sys.exit('stopping at dev point')
+
+                # if this reach is gaged using the mean flow in the sos, rather than the algorithm
+                if (self.Branch == 'constrained') and (self.sos_dict[reach]['overwritten_indices']==1): 
+                    if FlowLevel == 'Mean':
+                        Qbar[i]=self.sos_dict[reach]['Qbar']
+                    elif FlowLevel == 'q33':
+                        Qbar[i]=self.sos_dict[reach]['q33']
+
+                    sigQ[i]=Qbar[i]*Gage_Uncertainty
+                    datasource.append('Gage')
+                else:
+                    if FlowLevel == 'Mean':
+                        if np.ma.is_masked(self.alg_dict[alg][reach]['qbar']):
+                            Qbar[i]=np.nan
+                        else:
+                            Qbar[i]=self.alg_dict[alg][reach]['qbar']
+                    elif FlowLevel == 'q33':
+                        try:
+                            if np.ma.is_masked(self.alg_dict[alg][reach]['q33']):
+                                Qbar[i]=np.nan
+                            else:
+                                Qbar[i]=self.alg_dict[alg][reach]['q33']
+                        except:
+                            print('did not find q33. reach=',reach)
+                            Qbar[i]=np.nan
+
+                    if np.isnan(PreviousResiduals[alg][i]):
+                        sigQ[i]=Qbar[i]*FLPE_Uncertainty
+                    else:
+                        sigQ[i]=abs(PreviousResiduals[alg][i])
+                    datasource.append('FLPE')
+            else:
+                 Qbar[i]=np.nan
+                 sigQ[i]=np.nan
+                 datasource.append('None')
+            i+=1
+
+
+         # this handles accidental nans still in the flow estimates
+         #   setting to zero should let these get reset
+         Qbar[np.isnan(Qbar)]=0.
+         Qbar[np.isinf(Qbar)]=0.
+
+         #specify uncertainty
+         bignumber=1e9
+         #bignumber=1e2
+         # for any values of zero in FLPE Qbar, set uncertainty to a big number
+         sigQ[Qbar==0]=bignumber
+
+         #check for whether FLPE data are ok
+         iFLPE=np.where(np.array(datasource)=='FLPE')
+         if np.all(Qbar[iFLPE]==0):
+             FLPE_Data_OK=False
+             self.GoodFLPE[alg]=False
+         else:
+             FLPE_Data_OK=True
+
+         return Qbar,sigQ,FLPE_Data_OK
         
 
      def integrator_optimization_calcs(self,m,n,FLPE_Uncertainty,Gage_Uncertainty,FlowLevel,PreviousResiduals):
@@ -489,78 +563,10 @@ class Integrate:
           #1. compute "integrated" discharge. 
           for alg in self.alg_dict:
                print('    RUNNING MOI for ',alg)
-               self.GoodFLPE[alg]=True
-               Qbar=np.empty([n,])
-               sigQ=np.empty([n,])
-               datasource=[]
-               i=0
-               #for reach in self.alg_dict[alg]:
-
-               reaches_in_alg=self.alg_dict[alg].keys()
-
-               for reach in self.basin_dict['reach_ids_all']:
-                  if reach in self.alg_dict[alg].keys():
-
-                      # if this reach is gaged using the mean flow in the sos, rather than the algorithm
-                      if (self.Branch == 'constrained') and (self.sos_dict[reach]['overwritten_indices']==1): 
-                          if FlowLevel == 'Mean':
-                              Qbar[i]=self.sos_dict[reach]['Qbar']
-                          elif FlowLevel == 'q33':
-                              Qbar[i]=self.sos_dict[reach]['q33']
-
-                          sigQ[i]=Qbar[i]*Gage_Uncertainty
-                          datasource.append('Gage')
-                      else:
-                          if FlowLevel == 'Mean':
-                              if np.ma.is_masked(self.alg_dict[alg][reach]['qbar']):
-                                  Qbar[i]=np.nan
-                              else:
-                                  Qbar[i]=self.alg_dict[alg][reach]['qbar']
-                          elif FlowLevel == 'q33':
-                              try:
-                                  if np.ma.is_masked(self.alg_dict[alg][reach]['q33']):
-                                      Qbar[i]=np.nan
-                                  else:
-                                      Qbar[i]=self.alg_dict[alg][reach]['q33']
-                              except:
-                                  print('did not find q33. reach=',reach)
-                                  Qbar[i]=np.nan
-  
-                          if np.isnan(PreviousResiduals[alg][i]):
-                              sigQ[i]=Qbar[i]*FLPE_Uncertainty
-                          else:
-                              sigQ[i]=abs(PreviousResiduals[alg][i])
-                          datasource.append('FLPE')
-                  else:
-                       Qbar[i]=np.nan
-                       sigQ[i]=np.nan
-                       datasource.append('None')
-                  i+=1
-
-               #if alg == 'geobam':
-               #    print('Qbar=',Qbar)
-               #    print('sigQ=',sigQ)
 
 
-               # this handles accidental nans still in the flow estimates
-               #   setting to zero should let these get reset
-               Qbar[np.isnan(Qbar)]=0.
-               Qbar[np.isinf(Qbar)]=0.
-
-               #specify uncertainty
-               bignumber=1e9
-               #bignumber=1e2
-               # for any values of zero in FLPE Qbar, set uncertainty to a big number
-               sigQ[Qbar==0]=bignumber
-
-               #check for whether FLPE data are ok
-               iFLPE=np.where(np.array(datasource)=='FLPE')
-               if np.all(Qbar[iFLPE]==0):
-                   FLPE_Data_OK=False
-                   self.GoodFLPE[alg]=False
-               else:
-                   FLPE_Data_OK=True
-               
+               #initialize integration variables
+               Qbar,sigQ,FLPE_Data_OK = self.initialize_integration_vars(FLPE_Uncertainty,Gage_Uncertainty,alg,FlowLevel,PreviousResiduals,n)
 
                # the G matrix defines mass conservation points
                G=self.calcG(m,n)
@@ -568,6 +574,7 @@ class Integrate:
                # solve integrator problem
                cons_massbalance=optimize.LinearConstraint(G,np.zeros(m,),np.zeros(m,))
                Qmin=0.
+               bignumber=1.0e9
                #cons_positive=optimize.LinearConstraint(np.eye(n),np.zeros(n,),np.ones(n,)*bignumber)
                cons_positive=optimize.LinearConstraint(np.eye(n),np.ones(n,)*Qmin,np.ones(n,)*bignumber)
 
