@@ -3,9 +3,10 @@ from glob import glob
 from pathlib import Path
 import warnings
 import os
+import sys
 
 # Third-party imports
-from netCDF4 import Dataset
+from netCDF4 import Dataset,chartostring
 import numpy as np
 
 class Input:
@@ -83,36 +84,73 @@ class Input:
             overwritten_indices=sos_dataset["model/overwritten_indexes"][:]
             overwritten_source=sos_dataset["model/overwritten_source"][:]
 
+        #initialize empty dictionary
         self.sos_dict={}
+
+        #get list of all agencies
+        try:
+            agencystr=sos_dataset.Gage_Agency
+        except:
+            agencystr=''
+
+        gage_agencies=agencystr.split(';')
+
         n_not_found=0
-        #for reach in self.basin_dict['reach_ids']:
         for reach in self.basin_dict['reach_ids_all']:
             try:
+                # initialize reach dictionary
                 self.sos_dict[reach]={}
+                # find index in the sos data array
                 k=np.argwhere(sosreachids==np.int64(reach))
                 k=k[0,0]
+                # assign key data elements
                 self.sos_dict[reach]['Qbar']=sosQbars[k]
-                #self.sos_dict[reach]['q67']=(sosfdc[k,6]+sosfdc[k,6])/2 #averages probability .31 and .36
                 self.sos_dict[reach]['q33']=sosfdc[k,13] #probability = .66
+                # assign data elements for constrained data
                 if self.branch == 'constrained':
                     self.sos_dict[reach]['overwritten_indices']=overwritten_indices[k]
-                    self.sos_dict[reach]['overwritten_source']=overwritten_source[k]
+                    source_str=str(chartostring(overwritten_source[k,:]))
+                    self.sos_dict[reach]['overwritten_source']=source_str.strip('x')
+
+                    #copy the gage data to this dictionary if it's a constrained reach
+                    if (self.sos_dict[reach]['overwritten_indices']==1 and 
+                      self.sos_dict[reach]['overwritten_source'] != 'grdc'):
+
+                         agency=self.sos_dict[reach]['overwritten_source']
+
+                         self.sos_dict[reach]['gage']={}
+                         self.sos_dict[reach]['gage']['source']=agency
+                         self.sos_dict[reach]['gage']['t']=[]
+                         self.sos_dict[reach]['gage']['Q']=[]
+
+                         # extract agency gage data for each reach in the domain
+                         num_name='num_'+ agency   +'_reaches'
+                         num_reaches=sos_dataset[agency].dimensions[num_name].size
+
+                         # determine which index in the sos corresponds to this gage
+                         igage=np.nan
+                         for i in range(num_reaches):
+                             gage_reach=str(sos_dataset[agency][agency + '_reach_id'][i])
+                             
+                             if gage_reach==reach:
+                                 igage=i
+
+                         if not np.isnan(igage):
+                             self.sos_dict[reach]['gage']['t']=sos_dataset[agency][agency+'_qt'][igage,:]
+                             self.sos_dict[reach]['gage']['Q']=sos_dataset[agency][agency+'_q'][igage,:]
+                         
                 else:
                     self.sos_dict[reach]['overwritten_indices']=np.nan
             except Exception as e:
                 #print(e)
                 print(f'reach data not found for {reach}')
                 n_not_found+=1
-                # self.sos_dict[reach]={}
-                # self.sos_dict[reach]['Qbar']=np.nan
-                # #self.sos_dict[reach]['q67']=(sosfdc[k,6]+sosfdc[k,6])/2 #averages probability .31 and .36
-                # self.sos_dict[reach]['q33']=np.nan #probability = .66
-                # self.sos_dict[reach]['overwritten_indices']=np.nan
 
 
         sos_dataset.close()
 
         #print('A total of ',n_not_found,' data not found')
+
 
     def extract_sword(self):
         """Extracts and stores SWORD data in sword_dict.
@@ -157,6 +195,8 @@ class Input:
              self.obs_dict[reach]['w']=swot_dataset["reach/width"][0:nt].filled(np.nan)
              self.obs_dict[reach]['S']=swot_dataset["reach/slope2"][0:nt].filled(np.nan)
              self.obs_dict[reach]['dA']=swot_dataset["reach/d_x_area"][0:nt].filled(np.nan)
+             self.obs_dict[reach]['t']=swot_dataset["reach/time"][0:nt].filled(np.nan)
+
 
              swot_dataset.close()
 
@@ -169,6 +209,7 @@ class Input:
              self.obs_dict[reach]['w']=np.delete(self.obs_dict[reach]['w'],iDelete,0)
              self.obs_dict[reach]['S']=np.delete(self.obs_dict[reach]['S'],iDelete,0)
              self.obs_dict[reach]['dA']=np.delete(self.obs_dict[reach]['dA'],iDelete,0)
+             self.obs_dict[reach]['t']=np.delete(self.obs_dict[reach]['t'],iDelete,0)
 
              self.obs_dict[reach]['iDelete']=iDelete
 

@@ -1,6 +1,7 @@
 #Standard imports
 import warnings
 import sys
+import datetime
 
 # Third-party imports
 import numpy as np
@@ -70,6 +71,9 @@ class Integrate:
 
           self.get_pre_mean_q()
 
+          if self.Branch == 'constrained':
+              self.get_gage_mean_q()
+
      def get_pre_mean_q(self):
         """Calculate the mean discharge for each reach-level FLPE algorithm.
         This represents the mean in time for each algorithm and each reach.
@@ -87,7 +91,53 @@ class Integrate:
                             if np.isnan(self.alg_dict[alg][reach]['qbar']):
                                 self.alg_dict[alg][reach]['qbar']=self.sos_dict[reach]['Qbar']
                                 self.alg_dict[alg][reach]['q33']=self.sos_dict[reach]['q33']
-          
+     
+     def get_gage_mean_q(self):
+         """Calculate the gaged mean discharge for each reach in the domain that has a gage
+         for the times in the SWOT files, for that reach. This should be done prior to 
+         integration operations. This should only be called during a constrained run
+         """
+         for reach in self.sos_dict.keys():
+             if reach in self.obs_dict.keys():
+
+                 # check whether reach is gaged. if not, do nothing
+                 try:
+                     agency=self.sos_dict[reach]['gage']['source']
+                     gaged_reach=True
+                 except:
+                     print('no gage found for reach ',reach)
+                     gaged_reach=False
+
+                 if gaged_reach:
+                     epoch = datetime.datetime(2000,1,1,0,0,0)
+                     gagedQs=[]
+                     for time in self.obs_dict[reach]['t']:
+                         try:
+                             ordinal_time=(epoch + datetime.timedelta(seconds=time)).toordinal()
+                         except:
+                             ordinal_time=np.nan
+                             print(time)
+                             warnings.warn('problem with time conversion to ordinal, most likely nan value')
+
+                         # find index in gaged timeseries that matches this swot observation and add to list
+                         try:
+                             idx = np.argwhere(self.sos_dict[reach]['gage']['t']==ordinal_time)
+                             idx = idx[0,0]
+                             gagedQs.append(self.sos_dict[reach]['gage']['Q'][idx])
+                         except:
+                             print('gaged time not found')
+
+                     # use the list to compute stats
+                     self.sos_dict[reach]['gage']['Qbar']=np.nan
+                     self.sos_dict[reach]['gage']['q33']=np.nan
+                     if gagedQs:
+                         try:
+                             Qbar=np.nanmean(gagedQs)
+                             Q33=np.nanquantile(gagedQs,.33)
+                             self.sos_dict[reach]['gage']['Qbar']=Qbar
+                             self.sos_dict[reach]['gage']['q33']=Q33
+                         except:
+                             print('problem extracting gage flow stats over swot period for reach',reach)
 
 
      def pull_sword_attributes_for_reach(self,k):
@@ -491,16 +541,27 @@ class Integrate:
             if reach in self.alg_dict[alg].keys():
 
 
+                """
                 if reach == '73120000521':
                     print('reached reach',reach)
-                    sys.exit('stopping at dev point')
+                    print('overwritten (1=yes)?',self.sos_dict[reach]['overwritten_indices'])
+                    print('Qbar=',self.sos_dict[reach]['Qbar'])
+                    print('Flow Level =',FlowLevel)
+                    print('i=',i)
+                    #sys.exit('stopping at dev point')
+                """
 
                 # if this reach is gaged using the mean flow in the sos, rather than the algorithm
-                if (self.Branch == 'constrained') and (self.sos_dict[reach]['overwritten_indices']==1): 
+                nrt_gaged_reach=(self.sos_dict[reach]['overwritten_indices']==1) and \
+                                  (self.sos_dict[reach]['overwritten_source']!='grdc')
+
+                if (self.Branch == 'constrained') and nrt_gaged_reach:
                     if FlowLevel == 'Mean':
-                        Qbar[i]=self.sos_dict[reach]['Qbar']
+                        #Qbar[i]=self.sos_dict[reach]['Qbar']
+                        Qbar[i]=self.sos_dict[reach]['gage']['Qbar']
                     elif FlowLevel == 'q33':
-                        Qbar[i]=self.sos_dict[reach]['q33']
+                        #Qbar[i]=self.sos_dict[reach]['q33']
+                        Qbar[i]=self.sos_dict[reach]['gage']['q33']
 
                     sigQ[i]=Qbar[i]*Gage_Uncertainty
                     datasource.append('Gage')
@@ -523,7 +584,10 @@ class Integrate:
                     if np.isnan(PreviousResiduals[alg][i]):
                         sigQ[i]=Qbar[i]*FLPE_Uncertainty
                     else:
-                        sigQ[i]=abs(PreviousResiduals[alg][i])
+                        if (self.Branch == 'constrained') and nrt_gaged_reach:
+                           sigQ[i]=Qbar[i]*Gage_Uncertainty
+                        else:
+                           sigQ[i]=abs(PreviousResiduals[alg][i])
                     datasource.append('FLPE')
             else:
                  Qbar[i]=np.nan
@@ -568,18 +632,15 @@ class Integrate:
                #initialize integration variables
                Qbar,sigQ,FLPE_Data_OK = self.initialize_integration_vars(FLPE_Uncertainty,Gage_Uncertainty,alg,FlowLevel,PreviousResiduals,n)
 
-               # the G matrix defines mass conservation points
+               # compute the G matrix, which defines mass conservation points
                G=self.calcG(m,n)
  
                # solve integrator problem
                cons_massbalance=optimize.LinearConstraint(G,np.zeros(m,),np.zeros(m,))
                Qmin=0.
                bignumber=1.0e9
-               #cons_positive=optimize.LinearConstraint(np.eye(n),np.zeros(n,),np.ones(n,)*bignumber)
                cons_positive=optimize.LinearConstraint(np.eye(n),np.ones(n,)*Qmin,np.ones(n,)*bignumber)
 
-               #Two possible uncertainty methods, but only one fully implemented
-               #UncertaintyMethod='Ensemble' #still experimental - also time-consuming
                UncertaintyMethod='Linear' 
 
                if not FLPE_Data_OK:
@@ -589,11 +650,10 @@ class Integrate:
                else:
 
                    Q0=self.compute_linear_Qhat(alg,m,n,sigQ,Qbar,FLPE_Uncertainty,G)
-                   np.clip(Q0,1.,np.inf,out=Q0)
 
+                   np.clip(Q0,1.,np.inf,out=Q0)
                    np.clip(sigQ,1.,np.inf,out=sigQ)
 
-                   #res=optimize.minimize(fun=self.MOI_ObjectiveFunc,x0=np.reshape(Qbar,[n,]),args=(Qbar,sigQ),method='SLSQP',                      
                    res=optimize.minimize(fun=self.MOI_ObjectiveFunc,x0=Q0,args=(Qbar,sigQ),method='SLSQP',                      
                            options={'maxiter':100},
                            constraints=(cons_massbalance,cons_positive))
@@ -637,6 +697,8 @@ class Integrate:
                  #   for i in range(m):
                  #       Gwriter.writerow(G[i,:])
                  #print(Qintegrator)
+
+               #print('Q[51]=',Qintegrator[51])
 
                #2. save data
                i=0
