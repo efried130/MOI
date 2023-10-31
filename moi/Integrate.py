@@ -5,6 +5,7 @@ import datetime
 
 # Third-party imports
 import numpy as np
+import pandas as pd
 from scipy import optimize
 from numpy import random
 
@@ -540,17 +541,6 @@ class Integrate:
          for reach in self.basin_dict['reach_ids_all']:
             if reach in self.alg_dict[alg].keys():
 
-
-                """
-                if reach == '73120000521':
-                    print('reached reach',reach)
-                    print('overwritten (1=yes)?',self.sos_dict[reach]['overwritten_indices'])
-                    print('Qbar=',self.sos_dict[reach]['Qbar'])
-                    print('Flow Level =',FlowLevel)
-                    print('i=',i)
-                    #sys.exit('stopping at dev point')
-                """
-
                 # if this reach is gaged using the mean flow in the sos, rather than the algorithm
                 nrt_gaged_reach=(self.sos_dict[reach]['overwritten_indices']==1) and \
                                   (self.sos_dict[reach]['overwritten_source']!='grdc')
@@ -562,6 +552,9 @@ class Integrate:
                     elif FlowLevel == 'q33':
                         #Qbar[i]=self.sos_dict[reach]['q33']
                         Qbar[i]=self.sos_dict[reach]['gage']['q33']
+
+                    #if reach =='73120000521':
+                    #    print('reach',reach,FlowLevel,'Assigning Qbar=',Qbar[i])
 
                     sigQ[i]=Qbar[i]*Gage_Uncertainty
                     datasource.append('Gage')
@@ -615,6 +608,14 @@ class Integrate:
          else:
              FLPE_Data_OK=True
 
+         # write out data
+         df=pd.DataFrame(list(self.basin_dict['reach_ids_all']),columns=['reachids'])
+         df['Qbar']=Qbar
+         df['sigQ']=sigQ
+         df['data source']=datasource
+         fname=alg+'integrator_init.csv'
+         df.to_csv(fname)
+
          return Qbar,sigQ,FLPE_Data_OK
         
 
@@ -631,6 +632,8 @@ class Integrate:
 
                #initialize integration variables
                Qbar,sigQ,FLPE_Data_OK = self.initialize_integration_vars(FLPE_Uncertainty,Gage_Uncertainty,alg,FlowLevel,PreviousResiduals,n)
+
+               #print('Prior Q[51]=',Qbar[51])
 
                # compute the G matrix, which defines mass conservation points
                G=self.calcG(m,n)
@@ -698,7 +701,7 @@ class Integrate:
                  #       Gwriter.writerow(G[i,:])
                  #print(Qintegrator)
 
-               #print('Q[51]=',Qintegrator[51])
+               #print('Posterior Q[51]=',Qintegrator[51])
 
                #2. save data
                i=0

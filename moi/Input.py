@@ -136,8 +136,20 @@ class Input:
                                  igage=i
 
                          if not np.isnan(igage):
+                             #cal_status:
+                             #  validation: 0
+                             #  calibration: 1
+                             #  historical: 2
+                             cal_status=sos_dataset[agency]['CAL'][igage]
+                         else:
+                             cal_status=np.nan
+
+                         if not np.isnan(igage) and cal_status==1:
                              self.sos_dict[reach]['gage']['t']=sos_dataset[agency][agency+'_qt'][igage,:]
                              self.sos_dict[reach]['gage']['Q']=sos_dataset[agency][agency+'_q'][igage,:]
+                             print('for reach',reach,'c/v=',sos_dataset[agency]['CAL'][igage])
+                             #sys.exit('stopping at dev point')
+
                          
                 else:
                     self.sos_dict[reach]['overwritten_indices']=np.nan
