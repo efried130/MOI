@@ -609,11 +609,12 @@ class Integrate:
 
          bignumber=1e9
          # for any values of zero in FLPE Qbar where we don't have residuals, set uncertainty to a big number
+         sigQmin=25.
          for i in range(n):
              if Qbar[i]==0. and np.isnan(PreviousResiduals[alg][i]) :
                  sigQ[i]=bignumber
-             if sigQ[i]==1.:
-                 print('oops! sigQ=1, reach=',reach,'index=',i)
+             if sigQ[i] < sigQmin and not nrt_gaged_reach:
+                sigQ[i] = sigQmin
 
          #check for whether FLPE data are ok
          iFLPE=np.where(np.array(datasource)=='FLPE')
@@ -636,7 +637,6 @@ class Integrate:
           for alg in self.alg_dict:
                #1. compute "integrated" discharge. 
                print('    RUNNING MOI for ',alg)
-
 
                #initialize integration variables
                Qbar,sigQ,FLPE_Data_OK = self.initialize_integration_vars(FLPE_Uncertainty,Gage_Uncertainty,alg,FlowLevel,PreviousResiduals,n)
@@ -663,7 +663,6 @@ class Integrate:
                    Q0=self.compute_linear_Qhat(alg,m,n,sigQ,Qbar,FLPE_Uncertainty,G)
 
                    np.clip(Q0,1.,np.inf,out=Q0)
-                   np.clip(sigQ,1.,np.inf,out=sigQ)
 
                    res=optimize.minimize(fun=self.MOI_ObjectiveFunc,x0=Q0,args=(Qbar,sigQ),method='SLSQP',                      
                            options={'maxiter':100},
@@ -712,15 +711,17 @@ class Integrate:
                #if FlowLevel == 'Mean':
                #   print('        Posterior Q[51]=',Qintegrator[51])
 
+               """
                # write out data
-               #if FlowLevel == 'Mean':
-               #   df=pd.DataFrame(list(self.basin_dict['reach_ids_all']),columns=['reachids'])
-               #   df['Qbar']=Qbar
-               #   df['sigQ']=sigQ
-               #   #df['data source']=datasource
-               #   df['Qintegrator']=Qintegrator
-               #   fname=alg+'integrator_init.csv'
-               #   df.to_csv(fname)
+               if FlowLevel == 'Mean':
+                  df=pd.DataFrame(list(self.basin_dict['reach_ids_all']),columns=['reachids'])
+                  df['Qbar']=Qbar
+                  df['sigQ']=sigQ
+                  #df['data source']=datasource
+                  df['Qintegrator']=Qintegrator
+                  fname=alg+'integrator_init.csv'
+                  df.to_csv(fname)
+               """
 
                #2. save data
                i=0
@@ -754,10 +755,10 @@ class Integrate:
          # borrowing from uncertainty calculations for now
 
           # compute covariance matrix: from compute_integrator_uncertainty
-          sigQ=FLPE_Uncertainty*Qbar 
+          sigQ0=FLPE_Uncertainty*Qbar 
           sigQmin=1.
-          np.clip(sigQ,sigQmin,np.inf,out=sigQ) #prevent any zero values in sigQ
-          sigQv=np.reshape(sigQ,(n,1))
+          np.clip(sigQ0,sigQmin,np.inf,out=sigQ0) #prevent any zero values in sigQ
+          sigQv=np.reshape(sigQ0,(n,1))
           rho=0.7
           covQ = np.matmul(sigQv,  sigQv.transpose()) * (rho* np.ones((n,n)) + (np.eye(n)-rho*np.eye(n) )   )  
 
@@ -785,10 +786,10 @@ class Integrate:
      def compute_integrator_uncertainty(self,alg,m,n,sigQ,Qbar,FLPE_Uncertainty,UncertaintyMethod,G):
 
           # compute covariance matrix
-          sigQ=FLPE_Uncertainty*Qbar 
+          sigQ0=FLPE_Uncertainty*Qbar 
           sigQmin=1.
-          np.clip(sigQ,sigQmin,np.inf,out=sigQ) #prevent any zero values in sigQ
-          sigQv=np.reshape(sigQ,(n,1))
+          np.clip(sigQ0,sigQmin,np.inf,out=sigQ0) #prevent any zero values in sigQ
+          sigQv=np.reshape(sigQ0,(n,1))
           rho=0.7
           covQ = np.matmul(sigQv,  sigQv.transpose()) * (rho* np.ones((n,n)) + (np.eye(n)-rho*np.eye(n) )   )  
 
@@ -803,7 +804,7 @@ class Integrate:
                   Qensc=np.empty((nEnsemble,n))
                   for i in range(nEnsemble): 
                        res=optimize.minimize(fun=self.MOI_ObjectiveFunc,x0=np.reshape(Qens[i,:],[n,]),
-                               args=(Qens[i,:],sigQ),method='SLSQP',                      
+                               args=(Qens[i,:],sigQ0),method='SLSQP',                      
                                constraints=(cons_massbalance,cons_positive))
                        Qensc[i,:]=res.x
 

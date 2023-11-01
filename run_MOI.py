@@ -207,7 +207,7 @@ def main():
 
     print('Running ',Branch,' branch.')
 
-    input = Input(FLPE_DIR, INPUT_DIR / "sos/", INPUT_DIR / "swot", INPUT_DIR / "sword", basin_data,Branch)
+    input = Input(FLPE_DIR, INPUT_DIR / "sos/", INPUT_DIR / "swot", INPUT_DIR / "sword", basin_data,Branch,Verbose)
     input.extract_sword()
     #input=apply_sword_patches(input,Verbose)
     input=get_all_sword_reach_in_basin(input,Verbose)

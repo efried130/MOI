@@ -34,7 +34,7 @@ class Input:
         Extract reach identifiers and store in basin_dict
     """
 
-    def __init__(self, alg_dir, sos_dir, swot_dir, sword_dir,basin_data,branch):
+    def __init__(self, alg_dir, sos_dir, swot_dir, sword_dir,basin_data,branch,verbose):
         """
         Parameters
         ----------
@@ -65,6 +65,7 @@ class Input:
         self.sword_dir = sword_dir
         self.swot_dir = swot_dir
         self.branch = branch
+        self.VerboseFlag = verbose
 
     def extract_sos(self):
         """Extracts and stores SoS data in sos_dict.
@@ -203,10 +204,12 @@ class Input:
              swotfile=self.swot_dir.joinpath(reach+'_SWOT.nc')
              try:
                 swot_dataset = Dataset(swotfile)
-                print(f'swot file found for {reach}')
+                if self.VerboseFlag:
+                   print(f'swot file found for {reach}')
              except:
-                 print(f'swot file not found for {reach}')
-                 continue
+                if self.VerboseFlag:
+                    print(f'swot file not found for {reach}')
+                continue
 
              self.obs_dict[reach]={}
              nt = swot_dataset.dimensions['nt'].size
