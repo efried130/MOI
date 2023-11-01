@@ -702,14 +702,14 @@ class Integrate:
                #   print('        Posterior Q[51]=',Qintegrator[51])
 
                # write out data
-               if FlowLevel == 'Mean':
-                  df=pd.DataFrame(list(self.basin_dict['reach_ids_all']),columns=['reachids'])
-                  df['Qbar']=Qbar
-                  df['sigQ']=sigQ
-                  #df['data source']=datasource
-                  df['Qintegrator']=Qintegrator
-                  fname=alg+'integrator_init.csv'
-                  df.to_csv(fname)
+               #if FlowLevel == 'Mean':
+               #   df=pd.DataFrame(list(self.basin_dict['reach_ids_all']),columns=['reachids'])
+               #   df['Qbar']=Qbar
+               #   df['sigQ']=sigQ
+               #   #df['data source']=datasource
+               #   df['Qintegrator']=Qintegrator
+               #   fname=alg+'integrator_init.csv'
+               #   df.to_csv(fname)
 
                #2. save data
                i=0
