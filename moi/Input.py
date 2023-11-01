@@ -106,24 +106,21 @@ class Input:
                 # assign key data elements
                 self.sos_dict[reach]['Qbar']=sosQbars[k]
                 self.sos_dict[reach]['q33']=sosfdc[k,13] #probability = .66
+                self.sos_dict[reach]['cal_status']=-1 
+
                 # assign data elements for constrained data
                 if self.branch == 'constrained':
                     self.sos_dict[reach]['overwritten_indices']=overwritten_indices[k]
                     source_str=str(chartostring(overwritten_source[k,:]))
                     self.sos_dict[reach]['overwritten_source']=source_str.strip('x')
 
+
                     #copy the gage data to this dictionary if it's a constrained reach
                     if (self.sos_dict[reach]['overwritten_indices']==1 and 
                       self.sos_dict[reach]['overwritten_source'] != 'grdc'):
 
-                         agency=self.sos_dict[reach]['overwritten_source']
-
-                         self.sos_dict[reach]['gage']={}
-                         self.sos_dict[reach]['gage']['source']=agency
-                         self.sos_dict[reach]['gage']['t']=[]
-                         self.sos_dict[reach]['gage']['Q']=[]
-
                          # extract agency gage data for each reach in the domain
+                         agency=self.sos_dict[reach]['overwritten_source']
                          num_name='num_'+ agency   +'_reaches'
                          num_reaches=sos_dataset[agency].dimensions[num_name].size
 
@@ -137,19 +134,30 @@ class Input:
 
                          if not np.isnan(igage):
                              #cal_status:
+                             #  ungaged: -1
                              #  validation: 0
                              #  calibration: 1
                              #  historical: 2
-                             cal_status=sos_dataset[agency]['CAL'][igage]
-                         else:
-                             cal_status=np.nan
+                             self.sos_dict[reach]['cal_status']=sos_dataset[agency]['CAL'][igage]
 
-                         if not np.isnan(igage) and cal_status==1:
+                         """
+                         if reach=='73120000131':
+                             print('Input - got to reach 73120000131')
+                             print(self.sos_dict[reach]['overwritten_source'])
+                             print('cal_status=',cal_status)
+                             sys.exit('stopping at dev point')
+                         """
+
+                         if not np.isnan(igage) and self.sos_dict[reach]['cal_status']==1:
+                             self.sos_dict[reach]['gage']={}
+                             self.sos_dict[reach]['gage']['source']=agency
+                             self.sos_dict[reach]['gage']['t']=[]
+                             self.sos_dict[reach]['gage']['Q']=[]
+
                              self.sos_dict[reach]['gage']['t']=sos_dataset[agency][agency+'_qt'][igage,:]
                              self.sos_dict[reach]['gage']['Q']=sos_dataset[agency][agency+'_q'][igage,:]
-                             print('for reach',reach,'c/v=',sos_dataset[agency]['CAL'][igage])
+                             #print('for reach',reach,'c/v=',sos_dataset[agency]['CAL'][igage])
                              #sys.exit('stopping at dev point')
-
                          
                 else:
                     self.sos_dict[reach]['overwritten_indices']=np.nan

@@ -106,7 +106,7 @@ class Integrate:
                      agency=self.sos_dict[reach]['gage']['source']
                      gaged_reach=True
                  except:
-                     print('no gage found for reach ',reach)
+                     #print('no gage found for reach ',reach)
                      gaged_reach=False
 
                  if gaged_reach:
@@ -117,7 +117,6 @@ class Integrate:
                              ordinal_time=(epoch + datetime.timedelta(seconds=time)).toordinal()
                          except:
                              ordinal_time=np.nan
-                             print(time)
                              warnings.warn('problem with time conversion to ordinal, most likely nan value')
 
                          # find index in gaged timeseries that matches this swot observation and add to list
@@ -126,7 +125,8 @@ class Integrate:
                              idx = idx[0,0]
                              gagedQs.append(self.sos_dict[reach]['gage']['Q'][idx])
                          except:
-                             print('gaged time not found')
+                             idx=np.nan
+                             #print('gaged time not found')
 
                      # use the list to compute stats
                      self.sos_dict[reach]['gage']['Qbar']=np.nan
@@ -536,14 +536,15 @@ class Integrate:
          Qbar=np.empty([n,])
          sigQ=np.empty([n,])
          datasource=[]
-         i=0
 
+         i=0
          for reach in self.basin_dict['reach_ids_all']:
             if reach in self.alg_dict[alg].keys():
 
                 # if this reach is gaged using the mean flow in the sos, rather than the algorithm
                 nrt_gaged_reach=(self.sos_dict[reach]['overwritten_indices']==1) and \
-                                  (self.sos_dict[reach]['overwritten_source']!='grdc')
+                                  (self.sos_dict[reach]['overwritten_source']!='grdc') and \
+                                  (self.sos_dict[reach]['cal_status']==1 )
 
                 if (self.Branch == 'constrained') and nrt_gaged_reach:
                     if FlowLevel == 'Mean':
@@ -552,9 +553,6 @@ class Integrate:
                     elif FlowLevel == 'q33':
                         #Qbar[i]=self.sos_dict[reach]['q33']
                         Qbar[i]=self.sos_dict[reach]['gage']['q33']
-
-                    #if reach =='73120000521':
-                    #    print('reach',reach,FlowLevel,'Assigning Qbar=',Qbar[i])
 
                     sigQ[i]=Qbar[i]*Gage_Uncertainty
                     datasource.append('Gage')
@@ -580,12 +578,16 @@ class Integrate:
                         if (self.Branch == 'constrained') and nrt_gaged_reach:
                            sigQ[i]=Qbar[i]*Gage_Uncertainty
                         else:
-                           sigQ[i]=abs(PreviousResiduals[alg][i])
+                           #sigQ[i]=abs(PreviousResiduals[alg][i])
+                           sig_inflation_fac=3.0
+                           sigQ[i]=max(abs(PreviousResiduals[alg][i])*sig_inflation_fac,Qbar[i]*FLPE_Uncertainty)
                     datasource.append('FLPE')
             else:
                  Qbar[i]=np.nan
                  sigQ[i]=np.nan
                  datasource.append('None')
+            #if reach == '73120000521':
+            #    print('reach=',reach,'i=',i)
             i+=1
 
 
@@ -594,11 +596,13 @@ class Integrate:
          Qbar[np.isnan(Qbar)]=0.
          Qbar[np.isinf(Qbar)]=0.
 
-         #specify uncertainty
          bignumber=1e9
-         #bignumber=1e2
-         # for any values of zero in FLPE Qbar, set uncertainty to a big number
-         sigQ[Qbar==0]=bignumber
+         # for any values of zero in FLPE Qbar where we don't have residuals, set uncertainty to a big number
+         for i in range(n):
+             if Qbar[i]==0. and np.isnan(PreviousResiduals[alg][i]) :
+                 sigQ[i]=bignumber
+             if sigQ[i]==1.:
+                 print('oops! sigQ=1, reach=',reach,'index=',i)
 
          #check for whether FLPE data are ok
          iFLPE=np.where(np.array(datasource)=='FLPE')
@@ -608,13 +612,6 @@ class Integrate:
          else:
              FLPE_Data_OK=True
 
-         # write out data
-         df=pd.DataFrame(list(self.basin_dict['reach_ids_all']),columns=['reachids'])
-         df['Qbar']=Qbar
-         df['sigQ']=sigQ
-         df['data source']=datasource
-         fname=alg+'integrator_init.csv'
-         df.to_csv(fname)
 
          return Qbar,sigQ,FLPE_Data_OK
         
@@ -625,8 +622,8 @@ class Integrate:
           residuals={}
           self.GoodFLPE={}
 
-          #1. compute "integrated" discharge. 
           for alg in self.alg_dict:
+               #1. compute "integrated" discharge. 
                print('    RUNNING MOI for ',alg)
 
 
@@ -701,7 +698,18 @@ class Integrate:
                  #       Gwriter.writerow(G[i,:])
                  #print(Qintegrator)
 
-               #print('Posterior Q[51]=',Qintegrator[51])
+               #if FlowLevel == 'Mean':
+               #   print('        Posterior Q[51]=',Qintegrator[51])
+
+               # write out data
+               if FlowLevel == 'Mean':
+                  df=pd.DataFrame(list(self.basin_dict['reach_ids_all']),columns=['reachids'])
+                  df['Qbar']=Qbar
+                  df['sigQ']=sigQ
+                  #df['data source']=datasource
+                  df['Qintegrator']=Qintegrator
+                  fname=alg+'integrator_init.csv'
+                  df.to_csv(fname)
 
                #2. save data
                i=0
@@ -717,12 +725,17 @@ class Integrate:
                                self.alg_dict[alg][reach]['integrator']['sbQ_rel']=stdQc_rel[i]
                            else:
                                warnings.warn('Topology probelm encountered, using prior uncertainty for sbQ_rel')
-                               self.alg_dict[alg][reach]['integrator']['sbQ_rel']=Qbar[i]*FLPE_Uncertainty
+                               self.alg_dict[alg][reach]['integrator']['sbQ_rel']=FLPE_Uncertainty
 
                        elif FlowLevel == 'q33':
                            self.alg_dict[alg][reach]['integrator']['q33']=Qintegrator[i]
+                   #if reach == '73120000521':
+                   #    print('        reach=',reach,'i=',i)
+                   #    if FlowLevel == 'Mean':
+                   #        print('        qbar=',self.alg_dict[alg][reach]['integrator']['qbar'])
                    i+=1
 
+          # there is a for loop that goes over all algorithms
 
           return residuals
 
@@ -1217,8 +1230,6 @@ class Integrate:
 
           #0.3 set number of flow levels to run
           FlowLevels=['Mean','q33'] 
-          #FlowLevels=['q33'] 
-          #FlowLevels=['Mean'] 
 
           #0.4 get sizes of the matrix sizes m & n
           m=0 #number of junctions

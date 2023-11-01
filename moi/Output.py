@@ -62,6 +62,7 @@ class Output:
             reaches_to_write=self.basin_dict['reach_ids']
         else:
             # offline runs,  it's nice to have the integrator values for reaches we do not have swot data for
+            print('debug mode: writing out all reach ids')
             reaches_to_write=self.basin_dict['reach_ids_all']
 
         for reach in reaches_to_write:
