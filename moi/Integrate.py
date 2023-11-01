@@ -755,11 +755,13 @@ class Integrate:
          # borrowing from uncertainty calculations for now
 
           # compute covariance matrix: from compute_integrator_uncertainty
-          sigQ0=FLPE_Uncertainty*Qbar 
+          #sigQ0=FLPE_Uncertainty*Qbar 
+          sigQ0=sigQ #this is how it should be, but it's producing nonsense...
           sigQmin=1.
           np.clip(sigQ0,sigQmin,np.inf,out=sigQ0) #prevent any zero values in sigQ
           sigQv=np.reshape(sigQ0,(n,1))
           rho=0.7
+          #rho=0.
           covQ = np.matmul(sigQv,  sigQv.transpose()) * (rho* np.ones((n,n)) + (np.eye(n)-rho*np.eye(n) )   )  
 
           try:
@@ -786,7 +788,8 @@ class Integrate:
      def compute_integrator_uncertainty(self,alg,m,n,sigQ,Qbar,FLPE_Uncertainty,UncertaintyMethod,G):
 
           # compute covariance matrix
-          sigQ0=FLPE_Uncertainty*Qbar 
+          #sigQ0=FLPE_Uncertainty*Qbar 
+          sigQ0=sigQ
           sigQmin=1.
           np.clip(sigQ0,sigQmin,np.inf,out=sigQ0) #prevent any zero values in sigQ
           sigQv=np.reshape(sigQ0,(n,1))
