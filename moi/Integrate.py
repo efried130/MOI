@@ -561,13 +561,24 @@ class Integrate:
                         if np.ma.is_masked(self.alg_dict[alg][reach]['qbar']):
                             Qbar[i]=np.nan
                         else:
-                            Qbar[i]=self.alg_dict[alg][reach]['qbar']
+
+                            nstdev=10.
+                            if abs(self.alg_dict[alg][reach]['qbar']-self.sos_dict[reach]['Qbar']) > \
+                                    self.sos_dict[reach]['Qbar']*FLPE_Uncertainty*nstdev:
+                                Qbar[i]=np.nan
+                            else:
+                                Qbar[i]=self.alg_dict[alg][reach]['qbar']
                     elif FlowLevel == 'q33':
                         try:
                             if np.ma.is_masked(self.alg_dict[alg][reach]['q33']):
                                 Qbar[i]=np.nan
                             else:
-                                Qbar[i]=self.alg_dict[alg][reach]['q33']
+                                nstdev=10.
+                                if abs(self.alg_dict[alg][reach]['qbar']-self.sos_dict[reach]['Qbar']) > \
+                                        self.sos_dict[reach]['Qbar']*FLPE_Uncertainty*nstdev:
+                                    Qbar[i]=np.nan
+                                else:
+                                    Qbar[i]=self.alg_dict[alg][reach]['q33']
                         except:
                             print('did not find q33. reach=',reach)
                             Qbar[i]=np.nan
@@ -1212,7 +1223,7 @@ class Integrate:
               niter=3
               for i in range(0,niter):
                   if self.VerboseFlag:
-                       print('Running iteration',i)
+                       print('Running iteration',i,'/',niter)
                   residuals=self.integrator_optimization_calcs(m,n,FLPE_Uncertainty,Gage_Uncertainty,FlowLevel,residuals)
 
 
@@ -1254,7 +1265,7 @@ class Integrate:
                   residuals[alg]=np.full((n,),np.nan)
               niter=3
               for i in range(0,niter):
-                  print('  Running iteration',i)
+                  print('  Running iteration',i,'/',niter)
                   residuals=self.integrator_optimization_calcs(m,n,FLPE_Uncertainty,Gage_Uncertainty,FlowLevel,residuals)
 
 

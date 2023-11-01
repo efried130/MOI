@@ -81,13 +81,13 @@ def get_all_sword_reach_in_basin(input,Verbose):
     input.basin_dict['reach_ids_all']=[]
     for reachid in basin_reach_list_all:
         if str(reachid) not in input.basin_dict['reach_ids']:
-            if Verbose:
-               print('reachid',reachid,'is not in basin json file, but is in SWORD.')
+            #if Verbose:
+            #   print('reachid',reachid,'is not in basin json file, but is in SWORD.')
             nadd+=1
         input.basin_dict['reach_ids_all'].append(str(reachid))
 
-    if Verbose:
-       print('Total of ',nadd, 'reaches in SWORD that were not in basin json')
+    #if Verbose:
+    #   print('Total of ',nadd, 'reaches in SWORD that were not in basin json')
 
     return input 
 
