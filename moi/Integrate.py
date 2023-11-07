@@ -544,7 +544,10 @@ class Integrate:
                 # if this reach is gaged using the mean flow in the sos, rather than the algorithm
                 nrt_gaged_reach=(self.sos_dict[reach]['overwritten_indices']==1) and \
                                   (self.sos_dict[reach]['overwritten_source']!='grdc') and \
-                                  (self.sos_dict[reach]['cal_status']==1 )
+                                  (self.sos_dict[reach]['cal_status']==1 ) and \
+                                  ('Qbar' in self.sos_dict[reach]['gage'].keys()) and \
+                                  ('q33' in  self.sos_dict[reach]['gage'].keys())
+
 
                 if (self.Branch == 'constrained') and nrt_gaged_reach:
                     if FlowLevel == 'Mean':

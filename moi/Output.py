@@ -227,6 +227,9 @@ class Output:
              mm_qbar_stage2  = out.createVariable("metroman/qbar_basinScale", "f8", fill_value=fillvalue)
              mm_qbar_stage2[:] = np.nan_to_num(self.alg_dict['metroman'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
 
+             mm_q33_stage2  = out.createVariable("metroman/q33_basinScale", "f8", fill_value=fillvalue)
+             mm_q33_stage2[:] = np.nan_to_num(self.alg_dict['metroman'][reach]['integrator']['q33'], copy=True, nan=fillvalue)
+
              mm_sbQ_rel = out.createVariable("metroman/sbQ_rel", "f8", fill_value=fillvalue)
              mm_sbQ_rel[:] = np.nan_to_num(self.alg_dict['metroman'][reach]['integrator']['sbQ_rel'], copy=True, nan=fillvalue)
 
