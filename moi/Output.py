@@ -1,5 +1,6 @@
 # Standard imports
 from datetime import datetime
+from pathlib import Path
 
 # Third-party imports
 from netCDF4 import Dataset
@@ -57,7 +58,7 @@ class Output:
 
         fillvalue = -999999999999
 
-        if self.out_dir == '/mnt/data/output':
+        if self.out_dir == Path('/mnt/data/output'):
             # normal confluence runs in AWS, just write out reaches we have swot data for
             reaches_to_write=self.basin_dict['reach_ids']
         else:
@@ -314,7 +315,7 @@ class Output:
 
         sword_src_file=self.sword_dir.joinpath(self.basin_dict['sword'])
 
-        if self.out_dir == '/mnt/data/output':
+        if self.out_dir == Path('/mnt/data/output'):
             #during normal operations, write this out to the sword directory
             sword_dest_file=self.sword_dir.joinpath(self.basin_dict['sword'].replace('.nc', '_moi.nc'))
         else:
