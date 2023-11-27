@@ -420,7 +420,8 @@ class Input:
             self.alg_dict["sic4dvar"][r_id] = {
                 #"q31": sv["Qalgo31"][:].filled(np.nan),#unclear which of these to use
                 "s1-flpe-exists": True,
-                "q": sv["Q_mm"][:].filled(np.nan),
+                "q_mm": sv["Q_mm"][:].filled(np.nan),
+                "q": sv["Q_da"][:].filled(np.nan),
                 # "q5": sv["Qalgo5"][:].filled(np.nan),
                 "n": sv["n"][:].filled(np.nan),
                 "a0": sv["A0"][:].filled(np.nan)
@@ -429,8 +430,8 @@ class Input:
         else:
             self.alg_dict["sic4dvar"][r_id] = { 
                 "s1-flpe-exists" : False ,
-                "q" : np.nan,
-                "q5" : np.nan,
+                "q_mm": sv["Q_mm"][:].filled(np.nan),
+                "q": sv["Q_da"][:].filled(np.nan)
                 "n" : np.nan,
                 "a0" : np.nan,
                 "qbar" : self.sos_dict[r_id]['Qbar'],
@@ -485,8 +486,8 @@ class Input:
 
         # sic4dvar
         self.alg_dict["sic4dvar"][r_id] = {
-            "q31": np.nan,
-            "q5": np.nan,
+            "q_mm": np.nan,
+            "q": np.nan,
             "n": np.nan,
             "a0": np.nan
         }
