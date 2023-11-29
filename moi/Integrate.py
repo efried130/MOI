@@ -173,10 +173,10 @@ class Integrate:
          #check to see if all reaches we've identified area in the basin 
          AllReachesInReachFile=True
          for r in junction_to_check['upflows']:
-             if str(r) not in self.basin_dict['reach_ids']:
+             if str(r) not in self.basin_dict['reach_ids_all']:
                  AllReachesInReachFile=False
          for r in junction_to_check['downflows']:
-             if str(r) not in self.basin_dict['reach_ids']:
+             if str(r) not in self.basin_dict['reach_ids_all']:
                  AllReachesInReachFile=False            
             
          return AlreadyExists,AllReachesInReachFile
@@ -220,8 +220,8 @@ class Integrate:
 
                  AlreadyExists,AllReachesInReachFile=self.ChecksPriorToAddingJunction(junction_up)
 
-                 #if not AlreadyExists and AllReachesInReachFile:
-                 if not AlreadyExists:
+                 if not AlreadyExists and AllReachesInReachFile:
+                 #if not AlreadyExists:
                      self.junctions.append(junction_up)
 
              #2 try adding the downstream junction
@@ -258,8 +258,8 @@ class Integrate:
                      print('junction down=',junction_dn['downflows'][0])
                      print(self.sword_dict['reach_id'][kdn])
 
-                 #if not AlreadyExists and AllReachesInReachFile:
-                 if not AlreadyExists:
+                 if not AlreadyExists and AllReachesInReachFile:
+                 #if not AlreadyExists:
                      self.junctions.append(junction_dn) 
 
      def RemoveDamReaches(self):
