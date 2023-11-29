@@ -431,7 +431,7 @@ class Input:
             self.alg_dict["sic4dvar"][r_id] = { 
                 "s1-flpe-exists" : False ,
                 "q_mm": sv["Q_mm"][:].filled(np.nan),
-                "q": sv["Q_da"][:].filled(np.nan)
+                "q": sv["Q_da"][:].filled(np.nan),
                 "n" : np.nan,
                 "a0" : np.nan,
                 "qbar" : self.sos_dict[r_id]['Qbar'],
