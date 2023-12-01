@@ -185,6 +185,8 @@ class Integrate:
          # create list of junctions
          self.junctions=list()
 
+         self.junctions_valid=True
+
          for reach in self.basin_dict['reach_ids_all']:
              reach=np.int64(reach)
              k=np.argwhere(self.sword_dict['reach_id'] == reach)
@@ -209,7 +211,8 @@ class Integrate:
                  # sometimes sword says there are upstream reaches and there actually isnt
                  # in these cases skip the reach and raise a warning
                  if not any(junction_up['upflows']):
-                    warnings.warn(f'Upsream reaches not found for reach {reach}')
+                    warnings.warn(f'Upstream reaches not found for reach {reach}')
+                    self.junctions_valid=False
                     continue
 
                  kup=np.argwhere(self.sword_dict['reach_id'] == junction_up['upflows'][0])
@@ -241,6 +244,7 @@ class Integrate:
                  # in these cases skip the reach and raise a warning
                  if not any(junction_dn['downflows']):
                     warnings.warn(f'Downstream reaches not found for reach {reach}')
+                    self.junctions_valid=False
                     continue
 
                  kdn=np.argwhere(self.sword_dict['reach_id'] == junction_dn['downflows'][0])
@@ -657,7 +661,7 @@ class Integrate:
 
                UncertaintyMethod='Linear' 
 
-               if not FLPE_Data_OK:
+               if not FLPE_Data_OK or not self.junctions_valid:
                    print('FLPE data not ok for ',alg,'. setting Qintegrator = Qprior here')
                    Qintegrator=Qbar
                    residuals[alg]=np.full((n,),np.nan)
@@ -736,10 +740,13 @@ class Integrate:
                            self.alg_dict[alg][reach]['integrator']['sbQ_rel']=np.nan
                        if FlowLevel == 'Mean':
                            self.alg_dict[alg][reach]['integrator']['qbar']=Qintegrator[i]
-                           if res.success:
-                               self.alg_dict[alg][reach]['integrator']['sbQ_rel']=stdQc_rel[i]
+                           if  FLPE_Data_OK and self.junctions_valid:
+                               if res.success:
+                                   self.alg_dict[alg][reach]['integrator']['sbQ_rel']=stdQc_rel[i]
+                               else:
+                                   warnings.warn('Topology probelm encountered, using prior uncertainty for sbQ_rel')
+                                   self.alg_dict[alg][reach]['integrator']['sbQ_rel']=FLPE_Uncertainty
                            else:
-                               warnings.warn('Topology probelm encountered, using prior uncertainty for sbQ_rel')
                                self.alg_dict[alg][reach]['integrator']['sbQ_rel']=FLPE_Uncertainty
 
                        elif FlowLevel == 'q33':
