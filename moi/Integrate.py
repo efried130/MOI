@@ -173,10 +173,10 @@ class Integrate:
          #check to see if all reaches we've identified area in the basin 
          AllReachesInReachFile=True
          for r in junction_to_check['upflows']:
-             if str(r) not in self.basin_dict['reach_ids']:
+             if str(r) not in self.basin_dict['reach_ids_all']:
                  AllReachesInReachFile=False
          for r in junction_to_check['downflows']:
-             if str(r) not in self.basin_dict['reach_ids']:
+             if str(r) not in self.basin_dict['reach_ids_all']:
                  AllReachesInReachFile=False            
             
          return AlreadyExists,AllReachesInReachFile
@@ -184,6 +184,8 @@ class Integrate:
      def CreateJunctionList(self):
          # create list of junctions
          self.junctions=list()
+
+         self.junctions_valid=True
 
          for reach in self.basin_dict['reach_ids_all']:
              reach=np.int64(reach)
@@ -209,7 +211,8 @@ class Integrate:
                  # sometimes sword says there are upstream reaches and there actually isnt
                  # in these cases skip the reach and raise a warning
                  if not any(junction_up['upflows']):
-                    warnings.warn(f'Upsream reaches not found for reach {reach}')
+                    warnings.warn(f'Upstream reaches not found for reach {reach}')
+                    self.junctions_valid=False
                     continue
 
                  kup=np.argwhere(self.sword_dict['reach_id'] == junction_up['upflows'][0])
@@ -220,8 +223,8 @@ class Integrate:
 
                  AlreadyExists,AllReachesInReachFile=self.ChecksPriorToAddingJunction(junction_up)
 
-                 #if not AlreadyExists and AllReachesInReachFile:
-                 if not AlreadyExists:
+                 if not AlreadyExists and AllReachesInReachFile:
+                 #if not AlreadyExists:
                      self.junctions.append(junction_up)
 
              #2 try adding the downstream junction
@@ -241,6 +244,7 @@ class Integrate:
                  # in these cases skip the reach and raise a warning
                  if not any(junction_dn['downflows']):
                     warnings.warn(f'Downstream reaches not found for reach {reach}')
+                    self.junctions_valid=False
                     continue
 
                  kdn=np.argwhere(self.sword_dict['reach_id'] == junction_dn['downflows'][0])
@@ -258,8 +262,8 @@ class Integrate:
                      print('junction down=',junction_dn['downflows'][0])
                      print(self.sword_dict['reach_id'][kdn])
 
-                 #if not AlreadyExists and AllReachesInReachFile:
-                 if not AlreadyExists:
+                 if not AlreadyExists and AllReachesInReachFile:
+                 #if not AlreadyExists:
                      self.junctions.append(junction_dn) 
 
      def RemoveDamReaches(self):
@@ -657,7 +661,7 @@ class Integrate:
 
                UncertaintyMethod='Linear' 
 
-               if not FLPE_Data_OK:
+               if not FLPE_Data_OK or not self.junctions_valid:
                    print('FLPE data not ok for ',alg,'. setting Qintegrator = Qprior here')
                    Qintegrator=Qbar
                    residuals[alg]=np.full((n,),np.nan)
@@ -736,10 +740,13 @@ class Integrate:
                            self.alg_dict[alg][reach]['integrator']['sbQ_rel']=np.nan
                        if FlowLevel == 'Mean':
                            self.alg_dict[alg][reach]['integrator']['qbar']=Qintegrator[i]
-                           if res.success:
-                               self.alg_dict[alg][reach]['integrator']['sbQ_rel']=stdQc_rel[i]
+                           if  FLPE_Data_OK and self.junctions_valid:
+                               if res.success:
+                                   self.alg_dict[alg][reach]['integrator']['sbQ_rel']=stdQc_rel[i]
+                               else:
+                                   warnings.warn('Topology probelm encountered, using prior uncertainty for sbQ_rel')
+                                   self.alg_dict[alg][reach]['integrator']['sbQ_rel']=FLPE_Uncertainty
                            else:
-                               warnings.warn('Topology probelm encountered, using prior uncertainty for sbQ_rel')
                                self.alg_dict[alg][reach]['integrator']['sbQ_rel']=FLPE_Uncertainty
 
                        elif FlowLevel == 'q33':
