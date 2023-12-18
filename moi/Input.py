@@ -221,18 +221,29 @@ class Input:
              self.obs_dict[reach]['t']=swot_dataset["reach/time"][0:nt].filled(np.nan)
 
 
+             self.obs_dict[reach]['reach_q']=swot_dataset["reach/reach_q"][0:nt].filled(np.nan)
+             self.obs_dict[reach]['xovr_cal_q']=swot_dataset["reach/xovr_cal_q"][0:nt].filled(np.nan)
+
+             #print(self.obs_dict[reach]['xovr_cal_q']>0)
+             #print(self.obs_dict[reach]['reach_q']>0)
+             #print(np.isnan(self.obs_dict[reach]['dA']))
+
              swot_dataset.close()
 
              #select observations that are NOT equal to the fill value
              iDelete=np.where(np.isnan(self.obs_dict[reach]['h']) | \
                               np.isnan(self.obs_dict[reach]['w']) | \
                               np.isnan(self.obs_dict[reach]['S']) | \
-                              np.isnan(self.obs_dict[reach]['dA']) )
+                              np.isnan(self.obs_dict[reach]['dA'])| \
+                              (self.obs_dict[reach]['reach_q'] > 1) | \
+                              (self.obs_dict[reach]['xovr_cal_q'] > 1) )
+
              self.obs_dict[reach]['h']=np.delete(self.obs_dict[reach]['h'],iDelete,0)
              self.obs_dict[reach]['w']=np.delete(self.obs_dict[reach]['w'],iDelete,0)
              self.obs_dict[reach]['S']=np.delete(self.obs_dict[reach]['S'],iDelete,0)
              self.obs_dict[reach]['dA']=np.delete(self.obs_dict[reach]['dA'],iDelete,0)
              self.obs_dict[reach]['t']=np.delete(self.obs_dict[reach]['t'],iDelete,0)
+
 
              self.obs_dict[reach]['iDelete']=iDelete
 
@@ -241,6 +252,8 @@ class Input:
                 np.putmask(self.obs_dict[reach]['S'],self.obs_dict[reach]['S']<Smin,Smin)
 
              #Obs.S[Obs.S<Smin]=putmask(Obs.S,Obs.S<Smin,Smin) #limit slopes to a minimum value
+
+             #sys.exit('stopping at dev point')
 
              shape_iDelete=np.shape(iDelete)
              nDelete=shape_iDelete[1]
