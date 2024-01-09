@@ -620,7 +620,7 @@ class Integrate:
          for i in range(n):
              if Qbar[i]==0. and np.isnan(PreviousResiduals[alg][i]) :
                  sigQ[i]=bignumber
-             if sigQ[i] < sigQmin and not nrt_gaged_reach:
+             if sigQ[i] < sigQmin and not datasource[i]=='Gage':
                 sigQ[i] = sigQmin
 
          #check for whether FLPE data are ok
