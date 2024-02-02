@@ -604,11 +604,11 @@ class Integrate:
                  Qbar[i]=np.nan
                  sigQ[i]=np.nan
                  datasource.append('None')
-            if reach == '74295100301':
-                print('reach=',reach,'i=',i)
-                print('Qbar=',Qbar[i])
-                print('sigQ=',sigQ[i])
-                sys.exit('stopping at dev point')
+            #if reach == '74295100301':
+            #    print('reach=',reach,'i=',i)
+            #    print('Qbar=',Qbar[i])
+            #    print('sigQ=',sigQ[i])
+            #    sys.exit('stopping at dev point')
             i+=1
 
 
