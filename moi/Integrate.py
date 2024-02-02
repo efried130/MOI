@@ -604,8 +604,11 @@ class Integrate:
                  Qbar[i]=np.nan
                  sigQ[i]=np.nan
                  datasource.append('None')
-            #if reach == '73120000521':
+            #if reach == '74295100301':
             #    print('reach=',reach,'i=',i)
+            #    print('Qbar=',Qbar[i])
+            #    print('sigQ=',sigQ[i])
+            #    sys.exit('stopping at dev point')
             i+=1
 
 
@@ -620,7 +623,7 @@ class Integrate:
          for i in range(n):
              if Qbar[i]==0. and np.isnan(PreviousResiduals[alg][i]) :
                  sigQ[i]=bignumber
-             if sigQ[i] < sigQmin and not nrt_gaged_reach:
+             if sigQ[i] < sigQmin and not datasource[i]=='Gage':
                 sigQ[i] = sigQmin
 
          #check for whether FLPE data are ok
@@ -672,16 +675,19 @@ class Integrate:
                    np.clip(Q0,1.,np.inf,out=Q0)
 
                    res=optimize.minimize(fun=self.MOI_ObjectiveFunc,x0=Q0,args=(Qbar,sigQ),method='SLSQP',                      
-                           options={'maxiter':100},
+                           options={'maxiter':500},
                            constraints=(cons_massbalance,cons_positive))
 
                    if res.success:
                        Qintegrator=res.x
                    else:
+                       if self.VerboseFlag:
+                           print('      Used linear solution :(...')
+                           #print(res)
+                           #sys.exit('stopping at dev point')
+
                        Qintegrator=Q0
                        res.success=True
-                       if self.VerboseFlag:
-                           print('      Used linear solution...')
 
                    stdQc_rel=self.compute_integrator_uncertainty(alg,m,n,sigQ,Qintegrator,FLPE_Uncertainty,UncertaintyMethod,G)
 

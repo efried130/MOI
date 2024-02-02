@@ -196,8 +196,8 @@ def main():
 
     #basin data
     try:
-        basin_json = INPUT_DIR.joinpath(sys.argv[1])
-        # basin_json = Path("/home/mdurand_umass_edu/dev-confluence/mnt/").joinpath(sys.argv[1])
+        basin_json = INPUT_DIR.joinpath(sys.argv[1]) #turn this on for standard operations: AWS or running default basin file
+        #basin_json = Path("/home/mdurand_umass_edu/dev-confluence/mnt/").joinpath(sys.argv[1]) #turn this on to use a local basin file
         print('Using',basin_json)           
     except IndexError:
         basin_json = INPUT_DIR.joinpath("basin.json") 
