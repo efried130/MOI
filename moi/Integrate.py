@@ -69,7 +69,7 @@ class Integrate:
           self.sos_dict = sos_dict
           self.Branch=Branch
           self.VerboseFlag = VerboseFlag
-
+          print('getting pre mean q')
           self.get_pre_mean_q()
 
           if self.Branch == 'constrained':
@@ -881,11 +881,16 @@ class Integrate:
           return M
           
 
-     def compute_FLPs(self):
+     def compute_FLPs(self):         
           #2.1 geobam   
           print('CALCULATING GeoBAM FLPs')
           for reach in self.alg_dict['geobam']:
                #print('CALCULATING FLPs:',reach)
+               try:
+                   if self.obs_dict[reach]['nt'] > 0 and self.obs_dict[reach]['dA'].size > 0:
+                       print('good')
+               except:
+                   continue
                
                if reach not in self.basin_dict['reach_ids']:
                    # reach is not observed. do not calculate FLPs
@@ -894,7 +899,6 @@ class Integrate:
                with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
                     nhat=np.nanmean(self.alg_dict['geobam'][reach]['n'])
-
 
                if self.obs_dict[reach]['nt'] > 0 and self.obs_dict[reach]['dA'].size > 0:
                     
@@ -935,6 +939,11 @@ class Integrate:
           #2.2 hivdi
           print('CALCULATING HiVDI FLPs')
           for reach in self.alg_dict['hivdi']:
+               try:
+                   if self.obs_dict[reach]['nt'] > 0 and self.obs_dict[reach]['dA'].size > 0:
+                       print('good')
+               except:
+                   continue
 
                if reach not in self.basin_dict['reach_ids']:
                    # reach is not observed. do not calculate FLPs
@@ -984,6 +993,12 @@ class Integrate:
           #2.3 MetroMan
           print('CALCULATING MetroMan FLPs')
           for reach in self.alg_dict['metroman']:
+              
+               try:
+                   if self.obs_dict[reach]['nt'] > 0 and self.obs_dict[reach]['dA'].size > 0:
+                       print('good')
+               except:
+                   continue
                if reach not in self.basin_dict['reach_ids']:
                    # reach is not observed. do not calculate FLPs
                    continue
@@ -1031,6 +1046,11 @@ class Integrate:
           print('CALCULATING MOMMA FLPs')
           # params are (B,HB) == (river bottom elevation, bankfull elevation)
           for reach in self.alg_dict['momma']:
+               try:
+                   if self.obs_dict[reach]['nt'] > 0 and self.obs_dict[reach]['dA'].size > 0:
+                       print('good')
+               except:
+                   continue
                #print('.... calculating MOMMA FLPs for reach',reach)
                if reach not in self.basin_dict['reach_ids']:
                    # reach is not observed. do not calculate FLPs
@@ -1116,6 +1136,11 @@ class Integrate:
           #2.5 SAD
           print('CALCULATING SAD FLPs')
           for reach in self.alg_dict['sad']:
+               try:
+                   if self.obs_dict[reach]['nt'] > 0 and self.obs_dict[reach]['dA'].size > 0:
+                       print('good')
+               except:
+                   continue
                if reach not in self.basin_dict['reach_ids']:
                    # reach is not observed. do not calculate FLPs
                    continue
@@ -1163,6 +1188,11 @@ class Integrate:
           #2.6 SIC4DVar
           print('CALCULATING SIC4DVar FLPs')
           for reach in self.alg_dict['sic4dvar']:
+               try:
+                   if self.obs_dict[reach]['nt'] > 0 and self.obs_dict[reach]['dA'].size > 0:
+                       print('good')
+               except:
+                   continue
                if reach not in self.basin_dict['reach_ids']:
                    # reach is not observed. do not calculate FLPs
                    continue
@@ -1257,6 +1287,7 @@ class Integrate:
           #0.1 remove type 4 reaches from topology
           #self.RemoveDamReaches()
           #0.2 create junction list
+          print('creating junction list')
           self.CreateJunctionList()       
 
           #0.3 set number of flow levels to run
@@ -1290,5 +1321,6 @@ class Integrate:
 
 
           #2 compute optimal parameters for each algorithm's flow law
+          print('computing all flps')
           self.compute_FLPs()
 

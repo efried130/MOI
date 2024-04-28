@@ -204,8 +204,8 @@ class Input:
              swotfile=self.swot_dir.joinpath(reach+'_SWOT.nc')
              try:
                 swot_dataset = Dataset(swotfile)
-                if self.VerboseFlag:
-                   print(f'swot file found for {reach}')
+                # if self.VerboseFlag:
+                #    print(f'swot file found for {reach}')
              except:
                 if self.VerboseFlag:
                     print(f'swot file not found for {reach}')

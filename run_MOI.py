@@ -208,13 +208,20 @@ def main():
     print('Running ',Branch,' branch.')
 
     input = Input(FLPE_DIR, INPUT_DIR / "sos/", INPUT_DIR / "swot", INPUT_DIR / "sword", basin_data,Branch,Verbose)
+    print('Exctracting sword...')
     input.extract_sword()
     #input=apply_sword_patches(input,Verbose)
+    print('getting all sword reaches in basin')
     input=get_all_sword_reach_in_basin(input,Verbose)
+    print('extracting swot')
     input.extract_swot()
+    print('extracting sos')
     input.extract_sos()
+    print('extracting alg')
     input.extract_alg()
-
+    
+    
+    print('integrating')
     integrate = Integrate(input.alg_dict, input.basin_dict, input.sos_dict, input.sword_dict,input.obs_dict,Branch,Verbose)
     integrate.integrate()
 
