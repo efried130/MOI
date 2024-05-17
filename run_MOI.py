@@ -94,7 +94,7 @@ def get_all_sword_reach_in_basin(input,Verbose):
 def apply_sword_patches(input,Verbose):
     # this is included here to test custom patches. 
     # not run as part of normal confluence runs
-    patch_json = Path("/home/mdurand_umass_edu/dev-confluence/mnt/").joinpath('sword_patches_v215.json')
+    patch_json = Path("/home/mdurand_umass_edu/dev-confluence/mnt/").joinpath('sword_patches_v216.json')
     with open(patch_json) as json_file:
         patch_data = json.load(json_file)
 
@@ -210,7 +210,7 @@ def main():
     input = Input(FLPE_DIR, INPUT_DIR / "sos/", INPUT_DIR / "swot", INPUT_DIR / "sword", basin_data,Branch,Verbose)
     print('Exctracting sword...')
     input.extract_sword()
-    #input=apply_sword_patches(input,Verbose)
+    input=apply_sword_patches(input,Verbose)
     print('getting all sword reaches in basin')
     input=get_all_sword_reach_in_basin(input,Verbose)
     print('extracting swot')

@@ -566,7 +566,7 @@ class Integrate:
                 else:
                     if FlowLevel == 'Mean':
                         if np.ma.is_masked(self.alg_dict[alg][reach]['qbar']):
-                            Qbar[i]=np.nan
+                            Qbar[i]=np.nan #
                         else:
 
                             nstdev=10.
@@ -634,6 +634,11 @@ class Integrate:
          else:
              FLPE_Data_OK=True
 
+         #i=0
+         #for reach in self.basin_dict['reach_ids_all']:
+         #    print(i,reach,'Qbar=',Qbar[i],'stdQ=',sigQ[i])
+         #    i+=1
+         #sys.exit('Stopping at dev point')
 
          return Qbar,sigQ,FLPE_Data_OK
         
@@ -655,6 +660,18 @@ class Integrate:
 
                # compute the G matrix, which defines mass conservation points
                G=self.calcG(m,n)
+
+               '''
+               print(self.basin_dict['reach_ids_all'])
+               import csv
+               with open('G.csv','w',newline='') as csvfile:
+                   Gwriter = csv.writer(csvfile, delimiter=' ',
+                          quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                   Gwriter.writerow(self.basin_dict['reach_ids_all'])
+                   for i in range(m):
+                      Gwriter.writerow(G[i,:])
+               sys.exit('stopping at dev point')
+               '''
  
                # solve integrator problem
                cons_massbalance=optimize.LinearConstraint(G,np.zeros(m,),np.zeros(m,))
@@ -708,18 +725,9 @@ class Integrate:
                    else:
                        residuals[alg]=np.full((n,),np.nan)
 
+                   #print('finished first integration...')
                    #sys.exit('stopping at dev point')
 
-               #if alg == 'geobam':
-                 #print(self.basin_dict['reach_ids_all'])
-                 #import csv
-                 #with open('G.csv','w',newline='') as csvfile:
-                 #    Gwriter = csv.writer(csvfile, delimiter=' ',
-                 #           quotechar='|', quoting=csv.QUOTE_MINIMAL)
-                 #    Gwriter.writerow(self.basin_dict['reach_ids_all'])
-                 #   for i in range(m):
-                 #       Gwriter.writerow(G[i,:])
-                 #print(Qintegrator)
 
                #if FlowLevel == 'Mean':
                #   print('        Posterior Q[51]=',Qintegrator[51])

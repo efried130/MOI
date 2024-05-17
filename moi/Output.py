@@ -118,10 +118,10 @@ class Output:
                 sad_sbQ_rel[:] = np.nan_to_num(self.alg_dict['sad'][reach]['integrator']['sbQ_rel'], copy=True, nan=fillvalue)
 
                 #6 sic
-                sic = out.createGroup("sic")
-                sic_qbar_stage2  = out.createVariable("sic/qbar_basinScale", "f8", fill_value=fillvalue)
+                sic = out.createGroup("sic4dvar")
+                sic_qbar_stage2  = out.createVariable("sic4dvar/qbar_basinScale", "f8", fill_value=fillvalue)
                 sic_qbar_stage2[:] = np.nan_to_num(self.alg_dict['sic4dvar'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
-                sic_sbQ_rel = out.createVariable("sic/sbQ_rel", "f8", fill_value=fillvalue)
+                sic_sbQ_rel = out.createVariable("sic4dvar/sbQ_rel", "f8", fill_value=fillvalue)
                 sic_sbQ_rel[:] = np.nan_to_num(self.alg_dict['sic4dvar'][reach]['integrator']['sbQ_rel'], copy=True, nan=fillvalue)
                 out.close()
                 continue
