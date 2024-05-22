@@ -94,7 +94,8 @@ def get_all_sword_reach_in_basin(input,Verbose):
 def apply_sword_patches(input,Verbose):
     # this is included here to test custom patches. 
     # not run as part of normal confluence runs
-    patch_json = Path("/home/mdurand_umass_edu/dev-confluence/mnt/").joinpath('sword_patches_v216.json')
+    #patch_json = Path("/home/mdurand_umass_edu/dev-confluence/mnt/").joinpath('sword_patches_v216.json')
+    patch_json = Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/ohio_offline_runs/mnt/").joinpath('sword_patches_v216.json')
     with open(patch_json) as json_file:
         patch_data = json.load(json_file)
 
@@ -190,9 +191,11 @@ def main():
         FLPE_DIR = Path("/mnt/data/flpe")
         OUTPUT_DIR = Path("/mnt/data/output")
     else:
-        INPUT_DIR = Path("/home/mdurand_umass_edu/dev-confluence/mnt/input")
-        FLPE_DIR = Path("/home/mdurand_umass_edu/dev-confluence/mnt/flpe")
-        OUTPUT_DIR = Path("/home/mdurand_umass_edu/dev-confluence/mnt/moi")
+        #basedir=Path("/home/mdurand_umass_edu/dev-confluence/mnt/")
+        basedir=Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/ohio_offline_runs/mnt")
+        INPUT_DIR = basedir.joinpath("input") 
+        FLPE_DIR = basedir.joinpath("flpe")
+        OUTPUT_DIR = basedir.joinpath("moi")
 
     #basin data
     try:
@@ -210,7 +213,7 @@ def main():
     input = Input(FLPE_DIR, INPUT_DIR / "sos/", INPUT_DIR / "swot", INPUT_DIR / "sword", basin_data,Branch,Verbose)
     print('Exctracting sword...')
     input.extract_sword()
-    input=apply_sword_patches(input,Verbose)
+    #input=apply_sword_patches(input,Verbose)
     print('getting all sword reaches in basin')
     input=get_all_sword_reach_in_basin(input,Verbose)
     print('extracting swot')

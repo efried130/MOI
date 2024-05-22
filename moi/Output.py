@@ -70,7 +70,8 @@ class Output:
              not_obs = False
              # just write out the steady flow discharge values if this was an unobserved reach
              try:
-                print(self.obs_dict[reach])
+                #print(self.obs_dict[reach])
+                tmpdata=self.obs_dict[reach]
              except:
                 print('reach not in obs_dict... filling with default')
                 not_obs = True
