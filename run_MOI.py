@@ -152,6 +152,22 @@ def apply_sword_patches(input,Verbose):
 
     return input
 
+def set_moi_params():
+
+    moi_params={
+        'FLPE_Uncertainty': 0.67, #default: 0.67
+        'Gage_Uncertainty': 0.10, #default: 0.10
+        'Fill_Uncertainty': 1.0,  #default: 1.0
+        'norm': 0.5,              #default: 0.5
+        'rho': 0.7,               #default: 0.7
+        'niter': 4,               #default: 4
+        'method':'linear',        #default: 'linear'
+        'quit_before_flpe':False, #default: False
+        'apply_patches': False    #default: False
+    }
+
+    return moi_params
+
 
 def main():
 
@@ -205,15 +221,21 @@ def main():
     except IndexError:
         basin_json = INPUT_DIR.joinpath("basin.json") 
 
-
     basin_data = get_basin_data(basin_json,index_to_run)
 
     print('Running ',Branch,' branch.')
 
+    print('setting moi params')
+    params_dict=set_moi_params()
+
     input = Input(FLPE_DIR, INPUT_DIR / "sos/", INPUT_DIR / "swot", INPUT_DIR / "sword", basin_data,Branch,Verbose)
     print('Exctracting sword...')
     input.extract_sword()
-    #input=apply_sword_patches(input,Verbose)
+
+    if params_dict['apply_patches']:
+        print('applying patches...')
+        input=apply_sword_patches(input,Verbose)
+
     print('getting all sword reaches in basin')
     input=get_all_sword_reach_in_basin(input,Verbose)
     print('extracting swot')
@@ -223,9 +245,8 @@ def main():
     print('extracting alg')
     input.extract_alg()
     
-    
     print('integrating')
-    integrate = Integrate(input.alg_dict, input.basin_dict, input.sos_dict, input.sword_dict,input.obs_dict,Branch,Verbose)
+    integrate = Integrate(input.alg_dict, input.basin_dict, input.sos_dict, input.sword_dict,input.obs_dict,params_dict,Branch,Verbose)
     integrate.integrate()
 
     output = Output(input.basin_dict, OUTPUT_DIR, integrate.integ_dict, integrate.alg_dict, integrate.obs_dict, input.sword_dir)

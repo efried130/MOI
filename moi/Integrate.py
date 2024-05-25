@@ -20,8 +20,8 @@ class Integrate:
          dict of reach_ids and SoS file needed to process entire basin of data
      integ_dict: dict
          dict of integrator estimate data
-     moi_params: ??
-         ??
+     params_dict: dict
+         dict of integrator parameters 
      sos_dict: dict
          dictionary of SoS data
      Methods
@@ -32,7 +32,7 @@ class Integrate:
          integrate and store reach-level data
      """
 
-     def __init__(self, alg_dict, basin_dict, sos_dict, sword_dict, obs_dict,Branch,VerboseFlag):
+     def __init__(self, alg_dict, basin_dict, sos_dict, sword_dict, obs_dict,params_dict,Branch,VerboseFlag):
           """
           Parameters
           ----------
@@ -44,6 +44,8 @@ class Integrate:
                dictionary of SoS data
           sword_dict: dict
                dictionary of SWORD data
+          params_dict: dict
+               dictionary of MOI parameters
           obs_dict: dict
                dictionary of SWOT observation data
           Branch: string
@@ -67,7 +69,7 @@ class Integrate:
                     "sic4dvar" : np.array([])
                }
           }
-          self.moi_params = None
+          self.params_dict = params_dict
           self.sos_dict = sos_dict
           self.Branch=Branch
           self.VerboseFlag = VerboseFlag
@@ -536,7 +538,7 @@ class Integrate:
 
         return G
 
-     def initialize_integration_vars(self,FLPE_Uncertainty,Gage_Uncertainty,Fill_Uncertainty,alg,FlowLevel,PreviousResiduals,n):
+     def initialize_integration_vars(self,alg,FlowLevel,PreviousResiduals,n):
 
          self.GoodFLPE[alg]=True
          Qbar=np.empty([n,])
@@ -572,7 +574,7 @@ class Integrate:
                         #Qbar[i]=self.sos_dict[reach]['q33']
                         Qbar[i]=self.sos_dict[reach]['gage']['q33']
 
-                    sigQ[i]=Qbar[i]*Gage_Uncertainty
+                    sigQ[i]=Qbar[i]*self.params_dict['Gage_Uncertainty']
                     datasource.append('Gage')
                 else:
                     if FlowLevel == 'Mean':
@@ -582,7 +584,7 @@ class Integrate:
 
                             nstdev=10.
                             if abs(self.alg_dict[alg][reach]['qbar']-self.sos_dict[reach]['Qbar']) > \
-                                    self.sos_dict[reach]['Qbar']*FLPE_Uncertainty*nstdev:
+                                    self.sos_dict[reach]['Qbar']*self.params_dict['FLPE_Uncertainty']*nstdev:
                                 Qbar[i]=np.nan
                             else:
                                 Qbar[i]=self.alg_dict[alg][reach]['qbar']
@@ -593,7 +595,7 @@ class Integrate:
                             else:
                                 nstdev=10.
                                 if abs(self.alg_dict[alg][reach]['qbar']-self.sos_dict[reach]['Qbar']) > \
-                                        self.sos_dict[reach]['Qbar']*FLPE_Uncertainty*nstdev:
+                                        self.sos_dict[reach]['Qbar']*self.params_dict['FLPE_Uncertainty']*nstdev:
                                     Qbar[i]=np.nan
                                 else:
                                     Qbar[i]=self.alg_dict[alg][reach]['q33']
@@ -602,24 +604,17 @@ class Integrate:
                             Qbar[i]=np.nan
 
                     if np.isnan(PreviousResiduals[alg][i]):
-                        sigQ[i]=Qbar[i]*FLPE_Uncertainty
+                        sigQ[i]=Qbar[i]*self.params_dict['FLPE_Uncertainty']
                     else:
                         if (self.Branch == 'constrained') and nrt_gaged_reach:
-                           sigQ[i]=Qbar[i]*Gage_Uncertainty
+                           sigQ[i]=Qbar[i]*self.params_dict['Gage_Uncertainty']
                         else:
-                           #sigQ[i]=abs(PreviousResiduals[alg][i])
-                           sig_inflation_fac=3.0
-                           sigQ[i]=max(abs(PreviousResiduals[alg][i])*sig_inflation_fac,Qbar[i]*FLPE_Uncertainty)
+                           sigQ[i]=max(abs(PreviousResiduals[alg][i]),Qbar[i]*self.params_dict['FLPE_Uncertainty'])
                     datasource.append('FLPE')
             else:
                  Qbar[i]=np.nan
                  sigQ[i]=np.nan
                  datasource.append('None')
-            #if reach == '74295100301':
-            #    print('reach=',reach,'i=',i)
-            #    print('Qbar=',Qbar[i])
-            #    print('sigQ=',sigQ[i])
-            #    sys.exit('stopping at dev point')
             i+=1
  
          # compute runoff and average runoff
@@ -642,7 +637,7 @@ class Integrate:
          for i in range(n):
              if np.isnan(Qbar[i]) or np.isinf(Qbar[i]):
                  Qbar[i]=runoff_avg*facc[i]*1000**2/86400/365
-                 sigQ[i]=Qbar[i]*Fill_Uncertainty
+                 sigQ[i]=Qbar[i]*self.params_dict['Fill_Uncertainty']
 
          bignumber=1e9
          # for any values of zero in FLPE Qbar where we don't have residuals, set uncertainty to a big number
@@ -676,7 +671,7 @@ class Integrate:
          return Qbar,sigQ,FLPE_Data_OK,facc
         
 
-     def integrator_optimization_calcs(self,m,n,FLPE_Uncertainty,Gage_Uncertainty,Fill_Uncertainty,FlowLevel,PreviousResiduals,method):
+     def integrator_optimization_calcs(self,m,n,FlowLevel,PreviousResiduals):
 
           #0 initialize dictionary of residuals, to be returned and passed back in for next iteration
           residuals={}
@@ -690,7 +685,7 @@ class Integrate:
                print('    RUNNING MOI for ',alg)
 
                #initialize integration variables
-               Qbar,sigQ,FLPE_Data_OK,facc = self.initialize_integration_vars(FLPE_Uncertainty,Gage_Uncertainty,Fill_Uncertainty,alg,FlowLevel,PreviousResiduals,n)
+               Qbar,sigQ,FLPE_Data_OK,facc = self.initialize_integration_vars(alg,FlowLevel,PreviousResiduals,n)
 
                #print('Prior Q[51]=',Qbar[51])
 
@@ -714,12 +709,12 @@ class Integrate:
                    residuals[alg]=np.full((n,),np.nan)
                else:
                    UncertaintyMethod='Linear' 
-                   if method == 'nonlinear':
+                   if self.params_dict['method'] == 'nonlinear':
                        cons_massbalance=optimize.LinearConstraint(G,np.zeros(m,),np.zeros(m,))
                        Qmin=0.
                        bignumber=1.0e9
                        cons_positive=optimize.LinearConstraint(np.eye(n),np.ones(n,)*Qmin,np.ones(n,)*bignumber)
-                       Q0,JuncErr=self.compute_linear_Qhat(alg,m,n,sigQ,Qbar,FLPE_Uncertainty,G)
+                       Q0,covQ=self.compute_linear_Qhat(alg,m,n,sigQ,Qbar,G)
                        np.clip(Q0,1.,np.inf,out=Q0)
 
                        res=optimize.minimize(fun=self.MOI_ObjectiveFunc,x0=Q0,args=(Qbar,sigQ),method='SLSQP',                      
@@ -738,11 +733,11 @@ class Integrate:
                            Qintegrator=Q0
                            res.success=True
                            Success=True
-                   elif method == 'linear': 
-                       Qintegrator,JuncErr=self.compute_linear_Qhat(alg,m,n,sigQ,Qbar,FLPE_Uncertainty,G)
+                   elif self.params_dict['method'] == 'linear': 
+                       Qintegrator,covQ=self.compute_linear_Qhat(alg,m,n,sigQ,Qbar,G)
                        Success=True
 
-                   stdQc_rel=self.compute_integrator_uncertainty(alg,m,n,sigQ,Qintegrator,FLPE_Uncertainty,UncertaintyMethod,G)
+                   stdQc_rel=self.compute_integrator_uncertainty(alg,m,n,covQ,Qintegrator,UncertaintyMethod,G)
 
                    if type(stdQc_rel) == bool:
                     if stdQc_rel == False:
@@ -764,21 +759,19 @@ class Integrate:
                    else:
                        residuals[alg]=np.full((n,),np.nan)
 
-                   '''
-                   # write out data
-                   if FlowLevel == 'Mean':
-                      df=pd.DataFrame(list(self.basin_dict['reach_ids_all']),columns=['reachids'])
-                      df['Qbar']=Qbar
-                      df['sigQ']=sigQ
-                      #df['data source']=datasource
-                      df['Qintegrator']=Qintegrator
-                      df['facc']=facc
-                      fname=alg+'integrator_init.csv'
-                      df.to_csv(fname)
-                   '''
+                   if self.params_dict['quit_before_flpe']:
+                       # write out data if we are quitting before flpe, debug mode
+                       if FlowLevel == 'Mean':
+                          df=pd.DataFrame(list(self.basin_dict['reach_ids_all']),columns=['reachids'])
+                          df['Qbar']=Qbar
+                          df['sigQ']=sigQ
+                          df['stdQc_rel']=stdQc_rel
+                          #df['data source']=datasource
+                          df['Qintegrator']=Qintegrator
+                          df['facc']=facc
+                          fname=alg+'integrator_init.csv'
+                          df.to_csv(fname)
 
-                   #print('finished first integration...')
-                   #sys.exit('stopping at dev point')
 
                # end of calcs for this alg: 1. compute integrated discharge
 
@@ -798,9 +791,9 @@ class Integrate:
                                    self.alg_dict[alg][reach]['integrator']['sbQ_rel']=stdQc_rel[i]
                                else:
                                    warnings.warn('Topology probelm encountered, using prior uncertainty for sbQ_rel')
-                                   self.alg_dict[alg][reach]['integrator']['sbQ_rel']=FLPE_Uncertainty
+                                   self.alg_dict[alg][reach]['integrator']['sbQ_rel']=self.params_dict['FLPE_Uncertainty']
                            else:
-                               self.alg_dict[alg][reach]['integrator']['sbQ_rel']=FLPE_Uncertainty
+                               self.alg_dict[alg][reach]['integrator']['sbQ_rel']=self.params_dict['FLPE_Uncertainty']
 
                        elif FlowLevel == 'q33':
                            self.alg_dict[alg][reach]['integrator']['q33']=Qintegrator[i]
@@ -814,51 +807,31 @@ class Integrate:
 
           return residuals
 
-     def compute_linear_Qhat(self,alg,m,n,sigQ,Qbar,FLPE_Uncertainty,G):
-         # borrowing from uncertainty calculations for now
+     def compute_linear_Qhat(self,alg,m,n,sigQ,Qbar,G):
+          # using the Adjustments formulation 
 
           # compute covariance matrix: from compute_integrator_uncertainty
-          #sigQ0=FLPE_Uncertainty*Qbar 
-          sigQ0=sigQ #this is how it should be, but it's producing nonsense...
+          sigQ0=sigQ 
           sigQmin=1.
           np.clip(sigQ0,sigQmin,np.inf,out=sigQ0) #prevent any zero values in sigQ
           sigQv=np.reshape(sigQ0,(n,1))
-          rho=0.7
-          #rho=0.
+          sigQv=sigQv**(self.params_dict['norm']/2.)
+          rho=self.params_dict['rho']
           covQ = np.matmul(sigQv,  sigQv.transpose()) * (rho* np.ones((n,n)) + (np.eye(n)-rho*np.eye(n) )   )  
-
+          
           try:
-                M,A=self.GetM(sigQv,G,m,n)
+              xhat= (np.eye(n)-covQ @ G.T @ np.linalg.inv(G@covQ@G.T) @ G ) @ Qbar 
           except:
-                warnings.warn('Singular matrix found when caluculating M, indicative of a topolgy problem. Setting initial Q = Qbar')
-                return Qbar
-
-          #get b
-          b=np.zeros((n+m,1))
-          for i in range(n):
-              b[i]=-2*Qbar[i]/sigQ[i]
-
-          xhat=solve(A,b)
+              warnings.warn('adjustment calculation failed. returning Qhat=Qbar')
+              return Qbar,covQ
 
           Q0=np.empty( (n,) )
           for i in range(n):
               Q0[i]=xhat[i]
 
-          # check solution meets requirements
-          JuncErr= G @ Q0
+          return Q0,covQ
 
-          return Q0,JuncErr
-
-     def compute_integrator_uncertainty(self,alg,m,n,sigQ,Qbar,FLPE_Uncertainty,UncertaintyMethod,G):
-
-          # compute covariance matrix
-          #sigQ0=FLPE_Uncertainty*Qbar 
-          sigQ0=sigQ
-          sigQmin=1.
-          np.clip(sigQ0,sigQmin,np.inf,out=sigQ0) #prevent any zero values in sigQ
-          sigQv=np.reshape(sigQ0,(n,1))
-          rho=0.7
-          covQ = np.matmul(sigQv,  sigQv.transpose()) * (rho* np.ones((n,n)) + (np.eye(n)-rho*np.eye(n) )   )  
+     def compute_integrator_uncertainty(self,alg,m,n,covQ,Qbar,UncertaintyMethod,G):
 
           if UncertaintyMethod == 'Ensemble':
               if alg == 'metroman_ignore':
@@ -878,38 +851,28 @@ class Integrate:
                   stdQc=Qensc.std(axis=0)
                   stdQc_rel=stdQc/Qintegrator 
               else:
-                  stdQc_rel=np.full(n,FLPE_Uncertainty)
+                  stdQc_rel=np.full(n,self.params_dict['FLPE_Uncertainty'])
           elif UncertaintyMethod == 'Linear':
               try:
-                #M=self.GetM(sigQv,G,m,n)
-                M,A=self.GetM(sigQv,G,m,n)
+                  covQc=covQ-covQ @ G.T @ np.linalg.inv(G @ covQ @ G.T) @ G @ covQ
+                  stdQc=np.sqrt(np.diagonal(covQc))
+                  stdQc_rel=stdQc/np.abs(Qbar)
               except:
-                warnings.warn('Singular matrix found when caluculating M, indicative of a topolgy problem. Setting Qintegrator=Qbars')
-                return False
-              stdQc_rel=np.full(n,FLPE_Uncertainty)
-              Preach=np.zeros((n+m,n+m))
-              Preach=np.block([
-                  [covQ,            np.zeros((n,m))],
-                  [np.zeros((m,n)), np.zeros((m,m))]
-              ])         
-              Pc=M@Preach@np.transpose(M)
-              Pc=np.array(Pc)
-              covQb=Pc[0:n,0:n] #covariance matrix of reach errors
-
-              stdQc=np.sqrt(np.diagonal(covQb))
-
-              #np.clip(Qbar,1.,np.inf,out=Qbar) #limit Qbar here to avoid divide by zero 
-
-              stdQc_rel=stdQc/np.abs(Qbar)
+                  warnings.warn('adjustment uncertainty calculation failed. returning prior uncertainty')
+                  return np.reshape(np.sqrt(np.diagonal(covQ)),(n,1))
       
           return stdQc_rel 
  
-     def GetM(self,sigQv,G,m,n):
+     def GetM(self,sigQv,covQ,G,m,n):
           # m: number of junctions
           # n: number of reaches
           # G: mxn
           E=np.zeros((n,n)) #nxn
           np.fill_diagonal(E,-2*np.reciprocal(sigQv))
+
+          #E= -2 * np.lingalg.inv(covQ)    
+          #E= -2 * np.lingalg.inv(covQ)    
+
           F=np.transpose(G) #nxm
           H=np.zeros((m,m)) #mxm
           A=np.block([
@@ -937,7 +900,7 @@ class Integrate:
           #2.1 geobam   
           print('CALCULATING GeoBAM FLPs')
           for reach in self.alg_dict['geobam']:
-               print('CALCULATING FLPs:',reach)
+               #print('CALCULATING FLPs:',reach)
                '''
                try:
                    if self.obs_dict[reach]['nt'] > 0 and self.obs_dict[reach]['dA'].size > 0:
@@ -1333,8 +1296,7 @@ class Integrate:
      def integrate_prior(self):
           """Mimic the integrate function but apply only to the prior data"""
 
-          FLPE_Uncertainty=0.4
-          Gage_Uncertainty=0.05
+          #Gage_Uncertainty=0.05
 
           #0 create list of junctions, and figure out problem dimensions
           #0.1 remove type 4 reaches from topology
@@ -1368,24 +1330,15 @@ class Integrate:
               residuals={}
               for alg in self.alg_dict:
                   residuals[alg]=np.full((n,),np.nan)
-              niter=3
-              for i in range(0,niter):
+              #for i in range(0,niter):
+              for i in range(0,self.params_dict['niter']):
                   if self.VerboseFlag:
-                       print('Running iteration',i,'/',niter)
-                  residuals=self.integrator_optimization_calcs(m,n,FLPE_Uncertainty,Gage_Uncertainty,FlowLevel,residuals)
+                       print('  Running iteration',i,'/',self.params_dict['niter'])
+                  residuals=self.integrator_optimization_calcs(m,n,FlowLevel,residuals)
 
 
      def integrate(self):
           """Integrate reach-level FLPE data."""
-
-          #these need to get packed into integrator parameters
-          FLPE_Uncertainty=0.67
-          Fill_Uncertainty=1.00
-          Gage_Uncertainty=0.05
-          #niter=3
-          niter=4
-          #method='nonlinear'
-          method='linear'
 
           #0 create list of junctions, and figure out problem dimensions
           #0.1 remove type 4 reaches from topology
@@ -1418,10 +1371,13 @@ class Integrate:
               residuals={} 
               for alg in self.alg_dict:
                   residuals[alg]=np.full((n,),np.nan)
-              for i in range(0,niter):
-                  print('  Running iteration',i,'/',niter)
-                  residuals=self.integrator_optimization_calcs(m,n,FLPE_Uncertainty,Gage_Uncertainty,Fill_Uncertainty,FlowLevel,residuals,method)
+              #for i in range(0,niter):
+              for i in range(0,self.params_dict['niter']):
+                  print('  Running iteration',i+1,'/',self.params_dict['niter'])
+                  residuals=self.integrator_optimization_calcs(m,n,FlowLevel,residuals)
 
+          if self.params_dict['quit_before_flpe']:
+              sys.exit('done with integration... exiting')
 
           #2 compute optimal parameters for each algorithm's flow law
           print('computing all flps')
