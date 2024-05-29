@@ -609,7 +609,11 @@ class Integrate:
                         if (self.Branch == 'constrained') and nrt_gaged_reach:
                            sigQ[i]=Qbar[i]*self.params_dict['Gage_Uncertainty']
                         else:
-                           sigQ[i]=max(abs(PreviousResiduals[alg][i]),Qbar[i]*self.params_dict['FLPE_Uncertainty'])
+                           #sigQ[i]=max(abs(PreviousResiduals[alg][i]),Qbar[i]*self.params_dict['FLPE_Uncertainty'])
+                           #sigQ[i]=max(abs(PreviousResiduals[alg][i]),Qbar[i]*self.params_dict['FLPE_Uncertainty'])**self.params_dict['norm']
+                           #sigQ[i]=max(abs(PreviousResiduals[alg][i]),Qbar[i]*self.params_dict['FLPE_Uncertainty'])
+                           #sigQ[i]=max(abs(PreviousResiduals[alg][i]),Qbar[i]*.01)
+                           sigQ[i]=max(abs(PreviousResiduals[alg][i]),Qbar[i]*.01)**(-(self.params_dict['norm']-2.0))
                     datasource.append('FLPE')
             else:
                  Qbar[i]=np.nan
@@ -854,7 +858,10 @@ class Integrate:
                   stdQc_rel=np.full(n,self.params_dict['FLPE_Uncertainty'])
           elif UncertaintyMethod == 'Linear':
               try:
-                  covQc=covQ-covQ @ G.T @ np.linalg.inv(G @ covQ @ G.T) @ G @ covQ
+                  σ0=np.sqrt(np.mean(covQ))
+                  Q=covQ/σ0**2 #note this is the co-factor matrix from Kyle snow's book... not discharge
+                  covQc=σ0**2 * (Q - Q@G.T@np.linalg.inv(G@Q@G.T)@G@Q) 
+                  #covQc=covQ-covQ @ G.T @ np.linalg.inv(G @ covQ @ G.T) @ G @ covQ
                   stdQc=np.sqrt(np.diagonal(covQc))
                   stdQc_rel=stdQc/np.abs(Qbar)
               except:
