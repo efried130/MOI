@@ -162,8 +162,8 @@ def set_moi_params():
         'rho': 0.7,               #default: 0.7
         'niter': 4,               #default: 4
         'method':'linear',        #default: 'linear'
-        'quit_before_flpe':True , #default: False
-        'apply_patches': True #default: False
+        'quit_before_flpe':False, #default: False
+        'apply_patches': False #default: False
     }
 
     return moi_params
