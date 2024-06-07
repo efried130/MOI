@@ -69,7 +69,7 @@ class Integrate:
           self.sos_dict = sos_dict
           self.Branch=Branch
           self.VerboseFlag = VerboseFlag
-
+          print('getting pre mean q')
           self.get_pre_mean_q()
 
           if self.Branch == 'constrained':
@@ -173,10 +173,10 @@ class Integrate:
          #check to see if all reaches we've identified area in the basin 
          AllReachesInReachFile=True
          for r in junction_to_check['upflows']:
-             if str(r) not in self.basin_dict['reach_ids']:
+             if str(r) not in self.basin_dict['reach_ids_all']:
                  AllReachesInReachFile=False
          for r in junction_to_check['downflows']:
-             if str(r) not in self.basin_dict['reach_ids']:
+             if str(r) not in self.basin_dict['reach_ids_all']:
                  AllReachesInReachFile=False            
             
          return AlreadyExists,AllReachesInReachFile
@@ -184,6 +184,8 @@ class Integrate:
      def CreateJunctionList(self):
          # create list of junctions
          self.junctions=list()
+
+         self.junctions_valid=True
 
          for reach in self.basin_dict['reach_ids_all']:
              reach=np.int64(reach)
@@ -209,7 +211,8 @@ class Integrate:
                  # sometimes sword says there are upstream reaches and there actually isnt
                  # in these cases skip the reach and raise a warning
                  if not any(junction_up['upflows']):
-                    warnings.warn(f'Upsream reaches not found for reach {reach}')
+                    warnings.warn(f'Upstream reaches not found for reach {reach}')
+                    self.junctions_valid=False
                     continue
 
                  kup=np.argwhere(self.sword_dict['reach_id'] == junction_up['upflows'][0])
@@ -220,8 +223,8 @@ class Integrate:
 
                  AlreadyExists,AllReachesInReachFile=self.ChecksPriorToAddingJunction(junction_up)
 
-                 #if not AlreadyExists and AllReachesInReachFile:
-                 if not AlreadyExists:
+                 if not AlreadyExists and AllReachesInReachFile:
+                 #if not AlreadyExists:
                      self.junctions.append(junction_up)
 
              #2 try adding the downstream junction
@@ -241,6 +244,7 @@ class Integrate:
                  # in these cases skip the reach and raise a warning
                  if not any(junction_dn['downflows']):
                     warnings.warn(f'Downstream reaches not found for reach {reach}')
+                    self.junctions_valid=False
                     continue
 
                  kdn=np.argwhere(self.sword_dict['reach_id'] == junction_dn['downflows'][0])
@@ -258,8 +262,8 @@ class Integrate:
                      print('junction down=',junction_dn['downflows'][0])
                      print(self.sword_dict['reach_id'][kdn])
 
-                 #if not AlreadyExists and AllReachesInReachFile:
-                 if not AlreadyExists:
+                 if not AlreadyExists and AllReachesInReachFile:
+                 #if not AlreadyExists:
                      self.junctions.append(junction_dn) 
 
      def RemoveDamReaches(self):
@@ -600,8 +604,11 @@ class Integrate:
                  Qbar[i]=np.nan
                  sigQ[i]=np.nan
                  datasource.append('None')
-            #if reach == '73120000521':
+            #if reach == '74295100301':
             #    print('reach=',reach,'i=',i)
+            #    print('Qbar=',Qbar[i])
+            #    print('sigQ=',sigQ[i])
+            #    sys.exit('stopping at dev point')
             i+=1
 
 
@@ -616,7 +623,7 @@ class Integrate:
          for i in range(n):
              if Qbar[i]==0. and np.isnan(PreviousResiduals[alg][i]) :
                  sigQ[i]=bignumber
-             if sigQ[i] < sigQmin and not nrt_gaged_reach:
+             if sigQ[i] < sigQmin and not datasource[i]=='Gage':
                 sigQ[i] = sigQmin
 
          #check for whether FLPE data are ok
@@ -657,7 +664,7 @@ class Integrate:
 
                UncertaintyMethod='Linear' 
 
-               if not FLPE_Data_OK:
+               if not FLPE_Data_OK or not self.junctions_valid:
                    print('FLPE data not ok for ',alg,'. setting Qintegrator = Qprior here')
                    Qintegrator=Qbar
                    residuals[alg]=np.full((n,),np.nan)
@@ -668,16 +675,19 @@ class Integrate:
                    np.clip(Q0,1.,np.inf,out=Q0)
 
                    res=optimize.minimize(fun=self.MOI_ObjectiveFunc,x0=Q0,args=(Qbar,sigQ),method='SLSQP',                      
-                           options={'maxiter':100},
+                           options={'maxiter':500},
                            constraints=(cons_massbalance,cons_positive))
 
                    if res.success:
                        Qintegrator=res.x
                    else:
+                       if self.VerboseFlag:
+                           print('      Used linear solution :(...')
+                           #print(res)
+                           #sys.exit('stopping at dev point')
+
                        Qintegrator=Q0
                        res.success=True
-                       if self.VerboseFlag:
-                           print('      Used linear solution...')
 
                    stdQc_rel=self.compute_integrator_uncertainty(alg,m,n,sigQ,Qintegrator,FLPE_Uncertainty,UncertaintyMethod,G)
 
@@ -736,10 +746,13 @@ class Integrate:
                            self.alg_dict[alg][reach]['integrator']['sbQ_rel']=np.nan
                        if FlowLevel == 'Mean':
                            self.alg_dict[alg][reach]['integrator']['qbar']=Qintegrator[i]
-                           if res.success:
-                               self.alg_dict[alg][reach]['integrator']['sbQ_rel']=stdQc_rel[i]
+                           if  FLPE_Data_OK and self.junctions_valid:
+                               if res.success:
+                                   self.alg_dict[alg][reach]['integrator']['sbQ_rel']=stdQc_rel[i]
+                               else:
+                                   warnings.warn('Topology probelm encountered, using prior uncertainty for sbQ_rel')
+                                   self.alg_dict[alg][reach]['integrator']['sbQ_rel']=FLPE_Uncertainty
                            else:
-                               warnings.warn('Topology probelm encountered, using prior uncertainty for sbQ_rel')
                                self.alg_dict[alg][reach]['integrator']['sbQ_rel']=FLPE_Uncertainty
 
                        elif FlowLevel == 'q33':
@@ -868,11 +881,16 @@ class Integrate:
           return M
           
 
-     def compute_FLPs(self):
+     def compute_FLPs(self):         
           #2.1 geobam   
           print('CALCULATING GeoBAM FLPs')
           for reach in self.alg_dict['geobam']:
                #print('CALCULATING FLPs:',reach)
+               try:
+                   if self.obs_dict[reach]['nt'] > 0 and self.obs_dict[reach]['dA'].size > 0:
+                       print('good')
+               except:
+                   continue
                
                if reach not in self.basin_dict['reach_ids']:
                    # reach is not observed. do not calculate FLPs
@@ -881,7 +899,6 @@ class Integrate:
                with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
                     nhat=np.nanmean(self.alg_dict['geobam'][reach]['n'])
-
 
                if self.obs_dict[reach]['nt'] > 0 and self.obs_dict[reach]['dA'].size > 0:
                     
@@ -922,6 +939,11 @@ class Integrate:
           #2.2 hivdi
           print('CALCULATING HiVDI FLPs')
           for reach in self.alg_dict['hivdi']:
+               try:
+                   if self.obs_dict[reach]['nt'] > 0 and self.obs_dict[reach]['dA'].size > 0:
+                       print('good')
+               except:
+                   continue
 
                if reach not in self.basin_dict['reach_ids']:
                    # reach is not observed. do not calculate FLPs
@@ -971,6 +993,12 @@ class Integrate:
           #2.3 MetroMan
           print('CALCULATING MetroMan FLPs')
           for reach in self.alg_dict['metroman']:
+              
+               try:
+                   if self.obs_dict[reach]['nt'] > 0 and self.obs_dict[reach]['dA'].size > 0:
+                       print('good')
+               except:
+                   continue
                if reach not in self.basin_dict['reach_ids']:
                    # reach is not observed. do not calculate FLPs
                    continue
@@ -1018,6 +1046,11 @@ class Integrate:
           print('CALCULATING MOMMA FLPs')
           # params are (B,HB) == (river bottom elevation, bankfull elevation)
           for reach in self.alg_dict['momma']:
+               try:
+                   if self.obs_dict[reach]['nt'] > 0 and self.obs_dict[reach]['dA'].size > 0:
+                       print('good')
+               except:
+                   continue
                #print('.... calculating MOMMA FLPs for reach',reach)
                if reach not in self.basin_dict['reach_ids']:
                    # reach is not observed. do not calculate FLPs
@@ -1103,6 +1136,11 @@ class Integrate:
           #2.5 SAD
           print('CALCULATING SAD FLPs')
           for reach in self.alg_dict['sad']:
+               try:
+                   if self.obs_dict[reach]['nt'] > 0 and self.obs_dict[reach]['dA'].size > 0:
+                       print('good')
+               except:
+                   continue
                if reach not in self.basin_dict['reach_ids']:
                    # reach is not observed. do not calculate FLPs
                    continue
@@ -1150,6 +1188,11 @@ class Integrate:
           #2.6 SIC4DVar
           print('CALCULATING SIC4DVar FLPs')
           for reach in self.alg_dict['sic4dvar']:
+               try:
+                   if self.obs_dict[reach]['nt'] > 0 and self.obs_dict[reach]['dA'].size > 0:
+                       print('good')
+               except:
+                   continue
                if reach not in self.basin_dict['reach_ids']:
                    # reach is not observed. do not calculate FLPs
                    continue
@@ -1244,6 +1287,7 @@ class Integrate:
           #0.1 remove type 4 reaches from topology
           #self.RemoveDamReaches()
           #0.2 create junction list
+          print('creating junction list')
           self.CreateJunctionList()       
 
           #0.3 set number of flow levels to run
@@ -1277,5 +1321,6 @@ class Integrate:
 
 
           #2 compute optimal parameters for each algorithm's flow law
+          print('computing all flps')
           self.compute_FLPs()
 

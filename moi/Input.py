@@ -204,8 +204,8 @@ class Input:
              swotfile=self.swot_dir.joinpath(reach+'_SWOT.nc')
              try:
                 swot_dataset = Dataset(swotfile)
-                if self.VerboseFlag:
-                   print(f'swot file found for {reach}')
+                # if self.VerboseFlag:
+                #    print(f'swot file found for {reach}')
              except:
                 if self.VerboseFlag:
                     print(f'swot file not found for {reach}')
@@ -221,18 +221,29 @@ class Input:
              self.obs_dict[reach]['t']=swot_dataset["reach/time"][0:nt].filled(np.nan)
 
 
+             self.obs_dict[reach]['reach_q']=swot_dataset["reach/reach_q"][0:nt].filled(np.nan)
+             self.obs_dict[reach]['xovr_cal_q']=swot_dataset["reach/xovr_cal_q"][0:nt].filled(np.nan)
+
+             #print(self.obs_dict[reach]['xovr_cal_q']>0)
+             #print(self.obs_dict[reach]['reach_q']>0)
+             #print(np.isnan(self.obs_dict[reach]['dA']))
+
              swot_dataset.close()
 
              #select observations that are NOT equal to the fill value
              iDelete=np.where(np.isnan(self.obs_dict[reach]['h']) | \
                               np.isnan(self.obs_dict[reach]['w']) | \
                               np.isnan(self.obs_dict[reach]['S']) | \
-                              np.isnan(self.obs_dict[reach]['dA']) )
+                              np.isnan(self.obs_dict[reach]['dA'])| \
+                              (self.obs_dict[reach]['reach_q'] > 1) | \
+                              (self.obs_dict[reach]['xovr_cal_q'] > 1) )
+
              self.obs_dict[reach]['h']=np.delete(self.obs_dict[reach]['h'],iDelete,0)
              self.obs_dict[reach]['w']=np.delete(self.obs_dict[reach]['w'],iDelete,0)
              self.obs_dict[reach]['S']=np.delete(self.obs_dict[reach]['S'],iDelete,0)
              self.obs_dict[reach]['dA']=np.delete(self.obs_dict[reach]['dA'],iDelete,0)
              self.obs_dict[reach]['t']=np.delete(self.obs_dict[reach]['t'],iDelete,0)
+
 
              self.obs_dict[reach]['iDelete']=iDelete
 
@@ -241,6 +252,8 @@ class Input:
                 np.putmask(self.obs_dict[reach]['S'],self.obs_dict[reach]['S']<Smin,Smin)
 
              #Obs.S[Obs.S<Smin]=putmask(Obs.S,Obs.S<Smin,Smin) #limit slopes to a minimum value
+
+             #sys.exit('stopping at dev point')
 
              shape_iDelete=np.shape(iDelete)
              nDelete=shape_iDelete[1]
@@ -420,7 +433,8 @@ class Input:
             self.alg_dict["sic4dvar"][r_id] = {
                 #"q31": sv["Qalgo31"][:].filled(np.nan),#unclear which of these to use
                 "s1-flpe-exists": True,
-                "q": sv["Q_mm"][:].filled(np.nan),
+                "q_mm": sv["Q_mm"][:].filled(np.nan),
+                "q": sv["Q_da"][:].filled(np.nan),
                 # "q5": sv["Qalgo5"][:].filled(np.nan),
                 "n": sv["n"][:].filled(np.nan),
                 "a0": sv["A0"][:].filled(np.nan)
@@ -429,8 +443,8 @@ class Input:
         else:
             self.alg_dict["sic4dvar"][r_id] = { 
                 "s1-flpe-exists" : False ,
-                "q" : np.nan,
-                "q5" : np.nan,
+                "q_mm": np.nan,
+                "q": np.nan,
                 "n" : np.nan,
                 "a0" : np.nan,
                 "qbar" : self.sos_dict[r_id]['Qbar'],
@@ -485,8 +499,8 @@ class Input:
 
         # sic4dvar
         self.alg_dict["sic4dvar"][r_id] = {
-            "q31": np.nan,
-            "q5": np.nan,
+            "q_mm": np.nan,
+            "q": np.nan,
             "n": np.nan,
             "a0": np.nan
         }
