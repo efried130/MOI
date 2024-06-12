@@ -321,8 +321,8 @@ class Input:
             gb = Dataset(gb_file, 'r', format="NETCDF4")
             self.alg_dict["geobam"][r_id] = {
                 "s1-flpe-exists": True,
-                "q": np.array(self.__get_gb_data(gb, "q", "q", False)),
-                "n": np.array(self.__get_gb_data(gb, "logn", "mean", True)),
+                "q": np.array(self.__get_gb_data(gb,"q", "q", False)),
+                "n": np.array(self.__get_gb_data(gb,"logn", "mean", True)),
                 "a0": 1.0    # TODO temp value until work out neoBAM A0
             }
             gb.close()
@@ -505,7 +505,7 @@ class Input:
             "a0": np.nan
         }
 
-    def __get_gb_data(self, gb, group, pre, logged):
+    def __get_gb_data(self, gb,group, pre, logged):
         """Return geoBAM data as a numpy array.
         
         Parameters
@@ -520,15 +520,15 @@ class Input:
             boolean indicating if result is logged
         """
 
-        chain1 = gb[group][f"{pre}1"][:].filled(np.nan)
-        chain2 = gb[group][f"{pre}2"][:].filled(np.nan)
-        chain3 = gb[group][f"{pre}3"][:].filled(np.nan)
+        q = gb[group][pre][:].filled(np.nan)
+        # chain2 = gb[group][f"{pre}2"][:].filled(np.nan)
+        # chain3 = gb[group][f"{pre}3"][:].filled(np.nan)
 
-        chains = np.vstack((chain1, chain2, chain3))
+        # chains = np.vstack((chain1, chain2, chain3))
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
             if logged:
-                return np.exp(np.nanmean(chains, axis=0))
+                return np.exp(np.nanmean(q, axis=0))
             else:
-                return np.nanmean(chains, axis=0)
+                return np.nanmean(q, axis=0)
