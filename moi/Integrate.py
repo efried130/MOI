@@ -61,7 +61,7 @@ class Integrate:
                "pre_q_mean": np.array([]),
                "q_mean": np.array([]),
                "flpe": {
-                    "geobam" : np.array([]),
+                    "neobam" : np.array([]),
                     "hivdi" : np.array([]),
                     "metroman" : np.array([]),
                     "momma" : np.array([]),
@@ -906,7 +906,7 @@ class Integrate:
      def compute_FLPs(self):         
           #2.1 geobam   
           print('CALCULATING GeoBAM FLPs')
-          for reach in self.alg_dict['geobam']:
+          for reach in self.alg_dict['neobam']:
                #print('CALCULATING FLPs:',reach)
                '''
                try:
@@ -927,7 +927,7 @@ class Integrate:
 
                with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
-                    nhat=np.nanmean(self.alg_dict['geobam'][reach]['n'])
+                    nhat=np.nanmean(self.alg_dict['neobam'][reach]['n'])
 
                if self.obs_dict[reach]['nt'] > 0 and self.obs_dict[reach]['dA'].size > 0:
                     
@@ -937,14 +937,14 @@ class Integrate:
                          warnings.simplefilter("ignore", category=RuntimeWarning)
 
                          if not np.isnan(nhat):
-                             init_params=(nhat,np.nanmean(self.alg_dict['geobam'][reach]['a0']))
+                             init_params=(nhat,np.nanmean(self.alg_dict['neobam'][reach]['a0']))
                          else:
                              init_params=(0.03,Abar_min+10.)
                     #param_bounds=( (0.001,np.inf),(-min(self.obs_dict[reach]['dA'])+1,np.inf))
                     param_bounds=( (0.001,np.inf),(Abar_min,np.inf))
-                    qbar=self.alg_dict['geobam'][reach]['integrator']['qbar'] 
-                    if 'q33' in self.alg_dict['geobam'][reach]['integrator']:
-                        q33=self.alg_dict['geobam'][reach]['integrator']['q33']
+                    qbar=self.alg_dict['neobam'][reach]['integrator']['qbar'] 
+                    if 'q33' in self.alg_dict['neobam'][reach]['integrator']:
+                        q33=self.alg_dict['neobam'][reach]['integrator']['q33']
                     else:
                         q33=nan 
                     res = optimize.minimize(fun=self.bam_objfun,
@@ -954,16 +954,16 @@ class Integrate:
                     param_est=res.x
 
                     #store output
-                    self.alg_dict['geobam'][reach]['integrator']['n']=param_est[0]
-                    self.alg_dict['geobam'][reach]['integrator']['a0']=param_est[1]
-                    self.alg_dict['geobam'][reach]['integrator']['q']=self.bam_flowlaw(param_est,self.obs_dict[reach])
+                    self.alg_dict['neobam'][reach]['integrator']['n']=param_est[0]
+                    self.alg_dict['neobam'][reach]['integrator']['a0']=param_est[1]
+                    self.alg_dict['neobam'][reach]['integrator']['q']=self.bam_flowlaw(param_est,self.obs_dict[reach])
 
 
                else: 
                     #print('geobam FLP calcs failed, reach',reach)
-                    self.alg_dict['geobam'][reach]['integrator']['n']=np.nan
-                    self.alg_dict['geobam'][reach]['integrator']['a0']=np.nan
-                    self.alg_dict['geobam'][reach]['integrator']['q']=np.full( (1,self.obs_dict[reach]['nt']),np.nan)
+                    self.alg_dict['neobam'][reach]['integrator']['n']=np.nan
+                    self.alg_dict['neobam'][reach]['integrator']['a0']=np.nan
+                    self.alg_dict['neobam'][reach]['integrator']['q']=np.full( (1,self.obs_dict[reach]['nt']),np.nan)
 
           #2.2 hivdi
           print('CALCULATING HiVDI FLPs')

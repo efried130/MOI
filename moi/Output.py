@@ -93,12 +93,12 @@ class Output:
                 out = Dataset(out_file, 'w', format="NETCDF4")
                 out.production_date = datetime.now().strftime('%d-%b-%Y %H:%M:%S')
 
-                #1 geobam
-                gb = out.createGroup("geobam")
-                gb_qbar_stage2  = out.createVariable("geobam/qbar_basinScale", "f8", fill_value=fillvalue)
-                gb_qbar_stage2[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
-                gb_sbQ_rel = out.createVariable("geobam/sbQ_rel", "f8", fill_value=fillvalue)
-                gb_sbQ_rel[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['integrator']['sbQ_rel'], copy=True, nan=fillvalue)
+                #1 neobam
+                gb = out.createGroup("neobam")
+                gb_qbar_stage2  = out.createVariable("neobam/qbar_basinScale", "f8", fill_value=fillvalue)
+                gb_qbar_stage2[:] = np.nan_to_num(self.alg_dict['neobam'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
+                gb_sbQ_rel = out.createVariable("neobam/sbQ_rel", "f8", fill_value=fillvalue)
+                gb_sbQ_rel[:] = np.nan_to_num(self.alg_dict['neobam'][reach]['integrator']['sbQ_rel'], copy=True, nan=fillvalue)
 
                 #2 hivdi
                 hv = out.createGroup("hivdi")
@@ -145,8 +145,8 @@ class Output:
 
              self.obs_dict[reach]['nt'] += nDelete
 
-             self.alg_dict['geobam'][reach]['integrator']['q']=np.insert( \
-                   self.alg_dict['geobam'][reach]['integrator']['q'],iInsert,fillvalue,1)
+             self.alg_dict['neobam'][reach]['integrator']['q']=np.insert( \
+                   self.alg_dict['neobam'][reach]['integrator']['q'],iInsert,fillvalue,1)
 
              self.alg_dict['hivdi'][reach]['integrator']['q']=np.insert( \
                    self.alg_dict['hivdi'][reach]['integrator']['q'],iInsert,fillvalue,1)
@@ -174,28 +174,28 @@ class Output:
              nt.units = "time steps"
              nt[:] = range(self.obs_dict[reach]['nt'])
 
-             # Geobam
-             gb = out.createGroup("geobam")
-             gbq  = out.createVariable("geobam/q", "f8", ("nt",), fill_value=fillvalue)
-             gbq[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['integrator']['q'], copy=True, nan=fillvalue)
+             # neobam
+             gb = out.createGroup("neobam")
+             gbq  = out.createVariable("neobam/q", "f8", ("nt",), fill_value=fillvalue)
+             gbq[:] = np.nan_to_num(self.alg_dict['neobam'][reach]['integrator']['q'], copy=True, nan=fillvalue)
              
-             gb_a0  = out.createVariable("geobam/a0", "f8", fill_value=fillvalue)
-             gb_a0[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['integrator']['a0'], copy=True, nan=fillvalue)
+             gb_a0  = out.createVariable("neobam/a0", "f8", fill_value=fillvalue)
+             gb_a0[:] = np.nan_to_num(self.alg_dict['neobam'][reach]['integrator']['a0'], copy=True, nan=fillvalue)
              
-             gb_n  = out.createVariable("geobam/n", "f8", fill_value=fillvalue)
-             gb_n[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['integrator']['n'], copy=True, nan=fillvalue)
+             gb_n  = out.createVariable("neobam/n", "f8", fill_value=fillvalue)
+             gb_n[:] = np.nan_to_num(self.alg_dict['neobam'][reach]['integrator']['n'], copy=True, nan=fillvalue)
              
-             gb_qbar_stage1  = out.createVariable("geobam/qbar_reachScale", "f8", fill_value=fillvalue)
+             gb_qbar_stage1  = out.createVariable("neobam/qbar_reachScale", "f8", fill_value=fillvalue)
              try:
-                 gb_qbar_stage1[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['qbar'], copy=True, nan=fillvalue)
+                 gb_qbar_stage1[:] = np.nan_to_num(self.alg_dict['neobam'][reach]['qbar'], copy=True, nan=fillvalue)
              except:
                  gb_qbar_stage1[:]=np.nan
              
-             gb_qbar_stage2  = out.createVariable("geobam/qbar_basinScale", "f8", fill_value=fillvalue)
-             gb_qbar_stage2[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
+             gb_qbar_stage2  = out.createVariable("neobam/qbar_basinScale", "f8", fill_value=fillvalue)
+             gb_qbar_stage2[:] = np.nan_to_num(self.alg_dict['neobam'][reach]['integrator']['qbar'], copy=True, nan=fillvalue)
 
-             gb_sbQ_rel = out.createVariable("geobam/sbQ_rel", "f8", fill_value=fillvalue)
-             gb_sbQ_rel[:] = np.nan_to_num(self.alg_dict['geobam'][reach]['integrator']['sbQ_rel'], copy=True, nan=fillvalue)
+             gb_sbQ_rel = out.createVariable("neobam/sbQ_rel", "f8", fill_value=fillvalue)
+             gb_sbQ_rel[:] = np.nan_to_num(self.alg_dict['neobam'][reach]['integrator']['sbQ_rel'], copy=True, nan=fillvalue)
 
              # hivdi
              hv = out.createGroup("hivdi")
@@ -360,11 +360,11 @@ class Output:
         
                         #1 bam 
                         sword_dataset['reaches']['discharge_models'][branch]['BAM']['Abar'][reach_ind]= \
-                            self.alg_dict['geobam'][reach]['integrator']['a0']
+                            self.alg_dict['neobam'][reach]['integrator']['a0']
                         sword_dataset['reaches']['discharge_models'][branch]['BAM']['n'][reach_ind]= \
-                            self.alg_dict['geobam'][reach]['integrator']['n']
+                            self.alg_dict['neobam'][reach]['integrator']['n']
                         sword_dataset['reaches']['discharge_models'][branch]['BAM']['sbQ_rel'][reach_ind]= \
-                            self.alg_dict['geobam'][reach]['integrator']['sbQ_rel']
+                            self.alg_dict['neobam'][reach]['integrator']['sbQ_rel']
                         #2 hivdi
                         sword_dataset['reaches']['discharge_models'][branch]['HiVDI']['Abar'][reach_ind]=\
                             self.alg_dict['hivdi'][reach]['integrator']['Abar']

@@ -51,7 +51,7 @@ class Input:
         """
 
         self.alg_dict = {
-            "geobam": {},
+            "neobam": {},
             "hivdi": {},
             "metroman": {},
             "momma": {},
@@ -288,7 +288,7 @@ class Input:
 
             else:
                 #for unobserved reaches
-                algs=['geobam','hivdi','metroman','momma','sad','sic4dvar']
+                algs=['neobam','hivdi','metroman','momma','sad','sic4dvar']
                 for alg in algs:
                     self.alg_dict[alg][r_id] = {
                         "s1-flpe-exists": False,
@@ -302,7 +302,7 @@ class Input:
         r_id: str
             Unique reach identifier
         gb_file: Path
-            Path to geoBAM results file
+            Path to neoBAM results file
         hv_file: Path
             Path to HiVDI results file
         mo_file: Path
@@ -315,11 +315,11 @@ class Input:
             Path to SIC4DVar results file
         """
 
-        # geobam
+        # neobam
         if gb_file.exists():
             #print('reading',gb_file)
             gb = Dataset(gb_file, 'r', format="NETCDF4")
-            self.alg_dict["geobam"][r_id] = {
+            self.alg_dict["neobam"][r_id] = {
                 "s1-flpe-exists": True,
                 "q": np.array(self.__get_gb_data(gb,"q", "q", False)),
                 "n": np.array(self.__get_gb_data(gb,"logn", "mean", True)),
@@ -328,7 +328,7 @@ class Input:
             gb.close()
 
         else:
-            self.alg_dict["geobam"][r_id] = { 
+            self.alg_dict["neobam"][r_id] = { 
                 "s1-flpe-exists" : False ,
                 "q" : np.nan,
                 "n" : np.nan,
@@ -460,7 +460,7 @@ class Input:
             Unique reach identifier
         """
 
-        self.alg_dict["geobam"][r_id] = {
+        self.alg_dict["neobam"][r_id] = {
             "q": np.nan,
             "n": np.nan,
             "a0": np.nan
@@ -506,7 +506,7 @@ class Input:
         }
 
     def __get_gb_data(self, gb,group, pre, logged):
-        """Return geoBAM data as a numpy array.
+        """Return neoBAM data as a numpy array.
         
         Parameters
         ----------
