@@ -77,6 +77,7 @@ class Output:
             reaches_to_write=self.basin_dict['reach_ids_all']
 
         for reach in reaches_to_write:
+             reach = str(reach)
              not_obs = False
              # just write out the steady flow discharge values if this was an unobserved reach
              try:
