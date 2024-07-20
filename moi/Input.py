@@ -334,8 +334,8 @@ class Input:
                 "q" : np.nan,
                 "n" : np.nan,
                 "a0" : np.nan,
-                "qbar" : self.sos_dict[r_id]['Qbar'],
-                "q33" : self.sos_dict[r_id]['q33']
+                "qbar" : self.sos_dict[str(r_id)]['Qbar'],
+                "q33" : self.sos_dict[str(r_id)]['q33']
             }
 
         # hivdi
@@ -355,8 +355,8 @@ class Input:
                 "q" : np.nan,
                 "alpha" : np.nan,
                 "beta" : np.nan,
-                "qbar" : self.sos_dict[r_id]['Qbar'],
-                "q33" : self.sos_dict[r_id]['q33']
+                "qbar" : self.sos_dict[str(r_id)]['Qbar'],
+                "q33" : self.sos_dict[str(r_id)]['q33']
             }
 
         # momma
@@ -379,8 +379,8 @@ class Input:
                 "B" : np.nan,
                 "H" : np.nan,
                 "Save" : np.nan,
-                "qbar" : self.sos_dict[r_id]['Qbar'],
-                "q33" : self.sos_dict[r_id]['q33']
+                "qbar" : self.sos_dict[str(r_id)]['Qbar'],
+                "q33" : self.sos_dict[str(r_id)]['q33']
             }
 
         # sad
@@ -399,8 +399,8 @@ class Input:
                 "q" : np.nan,
                 "n" : np.nan,
                 "a0" : np.nan,
-                "qbar" : self.sos_dict[r_id]['Qbar'],
-                "q33" : self.sos_dict[r_id]['q33']
+                "qbar" : self.sos_dict[str(r_id)]['Qbar'],
+                "q33" : self.sos_dict[str(r_id)]['q33']
             }
 
         # metroman    
@@ -423,8 +423,8 @@ class Input:
                 "na" : np.nan,
                 "x1" : np.nan,
                 "a0" : np.nan,
-                "qbar" : self.sos_dict[r_id]['Qbar'],
-                "q33" : self.sos_dict[r_id]['q33']
+                "qbar" : self.sos_dict[str(r_id)]['Qbar'],
+                "q33" : self.sos_dict[str(r_id)]['q33']
             }
             #print('MetroMan file not found. Using prior')
 
@@ -448,8 +448,8 @@ class Input:
                 "q": np.nan,
                 "n" : np.nan,
                 "a0" : np.nan,
-                "qbar" : self.sos_dict[r_id]['Qbar'],
-                "q33" : self.sos_dict[r_id]['q33']
+                "qbar" : self.sos_dict[str(r_id)]['Qbar'],
+                "q33" : self.sos_dict[str(r_id)]['q33']
             }
 
     def __indicate_no_data(self, r_id):

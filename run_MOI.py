@@ -48,7 +48,7 @@ def get_basin_data(basin_json,index_to_run):
         return {
             #"basin_id" : int(data[index]["basin_id"]),
             "basin_id" : data[index]["basin_id"], #hope it's ok not to have basin ids always integers?
-            "reach_ids" : data[index]["reach_id"],
+            "reach_ids" : [str(i) for i in data[index]["reach_id"]],
             "sos" : data[index]["sos"],
             "sword": data[index]["sword"]
         }
@@ -56,7 +56,7 @@ def get_basin_data(basin_json,index_to_run):
                 return {
             #"basin_id" : int(data["basin_id"]),
             "basin_id" : data["basin_id"], #hope it's ok not to have basin ids always integers?
-            "reach_ids" : data["reach_id"],
+            "reach_ids" : [str(i) for i in data[index]["reach_id"]],
             "sos" : data["sos"],
             "sword": data["sword"]
         }
@@ -71,7 +71,7 @@ def get_all_sword_reach_in_basin(input,Verbose):
     for reachid in input.sword_dict['reach_id']:
         reachidstr=str(reachid)
         if reachidstr[0:BasinLevel] == str(input.basin_dict['basin_id']):
-            basin_reach_list_all.append(reachid)
+            basin_reach_list_all.append(reachidstr)
 
     if Verbose:
         print('There are a total of',len(basin_reach_list_all),'reaches in SWORD for this basin')
@@ -251,7 +251,7 @@ def main():
 
     output = Output(input.basin_dict, OUTPUT_DIR, integrate.integ_dict, integrate.alg_dict, integrate.obs_dict, input.sword_dir)
     output.write_output()
-    output.write_sword_output(Branch)
+    # output.write_sword_output(Branch)
 
 if __name__ == "__main__":
     from datetime import datetime

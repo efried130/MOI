@@ -77,18 +77,24 @@ class Output:
             reaches_to_write=self.basin_dict['reach_ids_all']
 
         for reach in reaches_to_write:
-             reach = str(reach)
              not_obs = False
              # just write out the steady flow discharge values if this was an unobserved reach
              try:
                 #print(self.obs_dict[reach])
                 tmpdata=self.obs_dict[reach]
+                print('tmpdata found')
              except:
                 print('reach not in obs_dict... filling with default')
                 not_obs = True
              if reach not in self.basin_dict['reach_ids']:
+                print(reach)
+                print(type(reach))
+                print(self.basin_dict['reach_ids'][0])
+                print(type(self.basin_dict['reach_ids'][0]))
+                print('second condition..')
                 not_obs = True
              if not_obs:
+                print('not obs found... doing regular')
                 # NetCDF file creation
                 out_file = self.out_dir / f"{reach}_integrator.nc"
                 out = Dataset(out_file, 'w', format="NETCDF4")
@@ -137,14 +143,15 @@ class Output:
                 sic_sbQ_rel[:] = np.nan_to_num(self.alg_dict['sic4dvar'][reach]['integrator']['sbQ_rel'], copy=True, nan=fillvalue)
                 out.close()
                 continue
-
              iDelete=self.obs_dict[reach]['iDelete']
              shape_iDelete=np.shape(iDelete)
              nDelete=shape_iDelete[1]
              iInsert=iDelete-np.arange(nDelete)
              iInsert=np.reshape(iInsert,[nDelete,]) 
-
              self.obs_dict[reach]['nt'] += nDelete
+             print(self.alg_dict['neobam'])
+             print(self.alg_dict['neobam'][reach]['integrator'])
+             print(self.alg_dict['neobam'][reach]['integrator']['q'],iInsert,fillvalue,1)
 
              self.alg_dict['neobam'][reach]['integrator']['q']=np.insert( \
                    self.alg_dict['neobam'][reach]['integrator']['q'],iInsert,fillvalue,1)
@@ -348,70 +355,76 @@ class Output:
         while try_cnt < 20:
             try:
                 sword_dataset = Dataset(sword_dest_file,'a')
-            
-
-                reaches = sword_dataset['reaches']['reach_id'][:]
-                
-                for reach in self.basin_dict['reach_ids']:
-                    reach_ind = np.where(reaches == int(reach))
-                    #print(reach)
-                    #print(reach_ind)
-                    
-                    try:
-        
-                        #1 bam 
-                        sword_dataset['reaches']['discharge_models'][branch]['BAM']['Abar'][reach_ind]= \
-                            self.alg_dict['neobam'][reach]['integrator']['a0']
-                        sword_dataset['reaches']['discharge_models'][branch]['BAM']['n'][reach_ind]= \
-                            self.alg_dict['neobam'][reach]['integrator']['n']
-                        sword_dataset['reaches']['discharge_models'][branch]['BAM']['sbQ_rel'][reach_ind]= \
-                            self.alg_dict['neobam'][reach]['integrator']['sbQ_rel']
-                        #2 hivdi
-                        sword_dataset['reaches']['discharge_models'][branch]['HiVDI']['Abar'][reach_ind]=\
-                            self.alg_dict['hivdi'][reach]['integrator']['Abar']
-                        sword_dataset['reaches']['discharge_models'][branch]['HiVDI']['alpha'][reach_ind]=\
-                            self.alg_dict['hivdi'][reach]['integrator']['alpha']
-                        sword_dataset['reaches']['discharge_models'][branch]['HiVDI']['beta'][reach_ind]=\
-                            self.alg_dict['hivdi'][reach]['integrator']['beta']
-                        sword_dataset['reaches']['discharge_models'][branch]['HiVDI']['sbQ_rel'][reach_ind]= \
-                            self.alg_dict['hivdi'][reach]['integrator']['sbQ_rel']
-                        #3 metroman
-                        sword_dataset['reaches']['discharge_models'][branch]['MetroMan']['Abar'][reach_ind]= \
-                            self.alg_dict['metroman'][reach]['integrator']['a0']
-                        sword_dataset['reaches']['discharge_models'][branch]['MetroMan']['ninf'][reach_ind]= \
-                            self.alg_dict['metroman'][reach]['integrator']['na']
-                        sword_dataset['reaches']['discharge_models'][branch]['MetroMan']['p'][reach_ind]= \
-                            self.alg_dict['metroman'][reach]['integrator']['x1']
-                        sword_dataset['reaches']['discharge_models'][branch]['MetroMan']['sbQ_rel'][reach_ind]= \
-                            self.alg_dict['metroman'][reach]['integrator']['sbQ_rel']
-                        #4 momma
-                        sword_dataset['reaches']['discharge_models'][branch]['MOMMA']['B'][reach_ind]= \
-                            self.alg_dict['momma'][reach]['integrator']['B']
-                        sword_dataset['reaches']['discharge_models'][branch]['MOMMA']['H'][reach_ind]= \
-                            self.alg_dict['momma'][reach]['integrator']['H']
-                        sword_dataset['reaches']['discharge_models'][branch]['MOMMA']['Save'][reach_ind]= \
-                            self.alg_dict['momma'][reach]['integrator']['Save']
-                        #sword_dataset['reaches']['discharge_models'][branch]['MOMMA']['sbQ_rel'][reach_ind]= \
-                        #    self.alg_dict['momma'][reach]['integrator']['sbQ_rel']
-                        #5 sads
-                        sword_dataset['reaches']['discharge_models'][branch]['SADS']['Abar'][reach_ind]= \
-                            self.alg_dict['sad'][reach]['integrator']['a0']
-                        sword_dataset['reaches']['discharge_models'][branch]['SADS']['n'][reach_ind]= \
-                            self.alg_dict['sad'][reach]['integrator']['n']
-                        sword_dataset['reaches']['discharge_models'][branch]['SADS']['sbQ_rel'][reach_ind]= \
-                            self.alg_dict['sad'][reach]['integrator']['sbQ_rel']
-                        #6 sicvdvar  
-                        sword_dataset['reaches']['discharge_models'][branch]['SIC4DVar']['Abar'][reach_ind]= \
-                            self.alg_dict['sic4dvar'][reach]['integrator']['a0']
-                        sword_dataset['reaches']['discharge_models'][branch]['SIC4DVar']['n'][reach_ind]= \
-                            self.alg_dict['sic4dvar'][reach]['integrator']['n']
-                        sword_dataset['reaches']['discharge_models'][branch]['SIC4DVar']['sbQ_rel'][reach_ind]= \
-                            self.alg_dict['sic4dvar'][reach]['integrator']['sbQ_rel']
-                    except:
-                        print(reach, 'data not found for sword...')
-
-                sword_dataset.close()
                 try_cnt = 999
-            except:
+            except Exception as e:
+                print(e, 'waiting...')
+
                 wait_random(2,30)
                 try_cnt += 1
+    
+        try:
+
+            reaches = sword_dataset['reaches']['reach_id'][:]
+            
+            for reach in self.basin_dict['reach_ids']:
+                reach_ind = np.where(reaches == reach)
+                print(self.alg_dict['neobam'][reach]['integrator']['a0'])
+                
+                try:
+    
+                    #1 bam 
+                    sword_dataset['reaches']['discharge_models'][branch]['BAM']['Abar'][reach_ind]= \
+                        self.alg_dict['neobam'][reach]['integrator']['a0']
+                    sword_dataset['reaches']['discharge_models'][branch]['BAM']['n'][reach_ind]= \
+                        self.alg_dict['neobam'][reach]['integrator']['n']
+                    sword_dataset['reaches']['discharge_models'][branch]['BAM']['sbQ_rel'][reach_ind]= \
+                        self.alg_dict['neobam'][reach]['integrator']['sbQ_rel']
+                    #2 hivdi
+                    sword_dataset['reaches']['discharge_models'][branch]['HiVDI']['Abar'][reach_ind]=\
+                        self.alg_dict['hivdi'][reach]['integrator']['Abar']
+                    sword_dataset['reaches']['discharge_models'][branch]['HiVDI']['alpha'][reach_ind]=\
+                        self.alg_dict['hivdi'][reach]['integrator']['alpha']
+                    sword_dataset['reaches']['discharge_models'][branch]['HiVDI']['beta'][reach_ind]=\
+                        self.alg_dict['hivdi'][reach]['integrator']['beta']
+                    sword_dataset['reaches']['discharge_models'][branch]['HiVDI']['sbQ_rel'][reach_ind]= \
+                        self.alg_dict['hivdi'][reach]['integrator']['sbQ_rel']
+                    #3 metroman
+                    sword_dataset['reaches']['discharge_models'][branch]['MetroMan']['Abar'][reach_ind]= \
+                        self.alg_dict['metroman'][reach]['integrator']['a0']
+                    sword_dataset['reaches']['discharge_models'][branch]['MetroMan']['ninf'][reach_ind]= \
+                        self.alg_dict['metroman'][reach]['integrator']['na']
+                    sword_dataset['reaches']['discharge_models'][branch]['MetroMan']['p'][reach_ind]= \
+                        self.alg_dict['metroman'][reach]['integrator']['x1']
+                    sword_dataset['reaches']['discharge_models'][branch]['MetroMan']['sbQ_rel'][reach_ind]= \
+                        self.alg_dict['metroman'][reach]['integrator']['sbQ_rel']
+                    #4 momma
+                    sword_dataset['reaches']['discharge_models'][branch]['MOMMA']['B'][reach_ind]= \
+                        self.alg_dict['momma'][reach]['integrator']['B']
+                    sword_dataset['reaches']['discharge_models'][branch]['MOMMA']['H'][reach_ind]= \
+                        self.alg_dict['momma'][reach]['integrator']['H']
+                    sword_dataset['reaches']['discharge_models'][branch]['MOMMA']['Save'][reach_ind]= \
+                        self.alg_dict['momma'][reach]['integrator']['Save']
+                    #sword_dataset['reaches']['discharge_models'][branch]['MOMMA']['sbQ_rel'][reach_ind]= \
+                    #    self.alg_dict['momma'][reach]['integrator']['sbQ_rel']
+                    #5 sads
+                    sword_dataset['reaches']['discharge_models'][branch]['SADS']['Abar'][reach_ind]= \
+                        self.alg_dict['sad'][reach]['integrator']['a0']
+                    sword_dataset['reaches']['discharge_models'][branch]['SADS']['n'][reach_ind]= \
+                        self.alg_dict['sad'][reach]['integrator']['n']
+                    sword_dataset['reaches']['discharge_models'][branch]['SADS']['sbQ_rel'][reach_ind]= \
+                        self.alg_dict['sad'][reach]['integrator']['sbQ_rel']
+                    #6 sicvdvar  
+                    sword_dataset['reaches']['discharge_models'][branch]['SIC4DVar']['Abar'][reach_ind]= \
+                        self.alg_dict['sic4dvar'][reach]['integrator']['a0']
+                    sword_dataset['reaches']['discharge_models'][branch]['SIC4DVar']['n'][reach_ind]= \
+                        self.alg_dict['sic4dvar'][reach]['integrator']['n']
+                    sword_dataset['reaches']['discharge_models'][branch]['SIC4DVar']['sbQ_rel'][reach_ind]= \
+                        self.alg_dict['sic4dvar'][reach]['integrator']['sbQ_rel']
+                except Exception as e:
+                    print(reach, 'data not found for sword...', e)
+        except Exception as e:
+            print('outside...', e)
+
+
+
+        sword_dataset.close()

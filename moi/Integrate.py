@@ -94,8 +94,8 @@ class Integrate:
                                 self.alg_dict[alg][reach]['q33']=np.nanquantile(self.alg_dict[alg][reach]['q'],.33)
                             
                             if np.isnan(self.alg_dict[alg][reach]['qbar']):
-                                self.alg_dict[alg][reach]['qbar']=self.sos_dict[reach]['Qbar']
-                                self.alg_dict[alg][reach]['q33']=self.sos_dict[reach]['q33']
+                                self.alg_dict[alg][reach]['qbar']=self.sos_dict[str(reach)]['Qbar']
+                                self.alg_dict[alg][reach]['q33']=self.sos_dict[str(reach)]['q33']
      
      def get_gage_mean_q(self):
          """Calculate the gaged mean discharge for each reach in the domain that has a gage
@@ -107,7 +107,7 @@ class Integrate:
 
                  # check whether reach is gaged. if not, do nothing
                  try:
-                     agency=self.sos_dict[reach]['gage']['source']
+                     agency=self.sos_dict[str(reach)]['gage']['source']
                      gaged_reach=True
                  except:
                      #print('no gage found for reach ',reach)
@@ -125,22 +125,22 @@ class Integrate:
 
                          # find index in gaged timeseries that matches this swot observation and add to list
                          try:
-                             idx = np.argwhere(self.sos_dict[reach]['gage']['t']==ordinal_time)
+                             idx = np.argwhere(self.sos_dict[str(reach)]['gage']['t']==ordinal_time)
                              idx = idx[0,0]
-                             gagedQs.append(self.sos_dict[reach]['gage']['Q'][idx])
+                             gagedQs.append(self.sos_dict[str(reach)]['gage']['Q'][idx])
                          except:
                              idx=np.nan
                              #print('gaged time not found')
 
                      # use the list to compute stats
-                     self.sos_dict[reach]['gage']['Qbar']=np.nan
-                     self.sos_dict[reach]['gage']['q33']=np.nan
+                     self.sos_dict[str(reach)]['gage']['Qbar']=np.nan
+                     self.sos_dict[str(reach)]['gage']['q33']=np.nan
                      if gagedQs:
                          try:
                              Qbar=np.nanmean(gagedQs)
                              Q33=np.nanquantile(gagedQs,.33)
-                             self.sos_dict[reach]['gage']['Qbar']=Qbar
-                             self.sos_dict[reach]['gage']['q33']=Q33
+                             self.sos_dict[str(reach)]['gage']['Qbar']=Qbar
+                             self.sos_dict[str(reach)]['gage']['q33']=Q33
                          except:
                              print('problem extracting gage flow stats over swot period for reach',reach)
 
@@ -559,20 +559,20 @@ class Integrate:
             if reach in self.alg_dict[alg].keys():
 
                 # if this reach is gaged using the mean flow in the sos, rather than the algorithm
-                nrt_gaged_reach=(self.sos_dict[reach]['overwritten_indices']==1) and \
-                                  (self.sos_dict[reach]['overwritten_source']!='grdc') and \
-                                  (self.sos_dict[reach]['cal_status']==1 ) and \
-                                  ('Qbar' in self.sos_dict[reach]['gage'].keys()) and \
-                                  ('q33' in  self.sos_dict[reach]['gage'].keys())
+                nrt_gaged_reach=(self.sos_dict[str(reach)]['overwritten_indices']==1) and \
+                                  (self.sos_dict[str(reach)]['overwritten_source']!='grdc') and \
+                                  (self.sos_dict[str(reach)]['cal_status']==1 ) and \
+                                  ('Qbar' in self.sos_dict[str(reach)]['gage'].keys()) and \
+                                  ('q33' in  self.sos_dict[str(reach)]['gage'].keys())
 
 
                 if (self.Branch == 'constrained') and nrt_gaged_reach:
                     if FlowLevel == 'Mean':
-                        #Qbar[i]=self.sos_dict[reach]['Qbar']
-                        Qbar[i]=self.sos_dict[reach]['gage']['Qbar']
+                        #Qbar[i]=self.sos_dict[str(reach)]['Qbar']
+                        Qbar[i]=self.sos_dict[str(reach)]['gage']['Qbar']
                     elif FlowLevel == 'q33':
-                        #Qbar[i]=self.sos_dict[reach]['q33']
-                        Qbar[i]=self.sos_dict[reach]['gage']['q33']
+                        #Qbar[i]=self.sos_dict[str(reach)]['q33']
+                        Qbar[i]=self.sos_dict[str(reach)]['gage']['q33']
 
                     sigQ[i]=Qbar[i]*self.params_dict['Gage_Uncertainty']
                     datasource.append('Gage')
@@ -583,8 +583,8 @@ class Integrate:
                         else:
 
                             nstdev=10.
-                            if abs(self.alg_dict[alg][reach]['qbar']-self.sos_dict[reach]['Qbar']) > \
-                                    self.sos_dict[reach]['Qbar']*self.params_dict['FLPE_Uncertainty']*nstdev:
+                            if abs(self.alg_dict[alg][reach]['qbar']-self.sos_dict[str(reach)]['Qbar']) > \
+                                    self.sos_dict[str(reach)]['Qbar']*self.params_dict['FLPE_Uncertainty']*nstdev:
                                 Qbar[i]=np.nan
                             else:
                                 Qbar[i]=self.alg_dict[alg][reach]['qbar']
@@ -594,8 +594,8 @@ class Integrate:
                                 Qbar[i]=np.nan
                             else:
                                 nstdev=10.
-                                if abs(self.alg_dict[alg][reach]['qbar']-self.sos_dict[reach]['Qbar']) > \
-                                        self.sos_dict[reach]['Qbar']*self.params_dict['FLPE_Uncertainty']*nstdev:
+                                if abs(self.alg_dict[alg][reach]['qbar']-self.sos_dict[str(reach)]['Qbar']) > \
+                                        self.sos_dict[str(reach)]['Qbar']*self.params_dict['FLPE_Uncertainty']*nstdev:
                                     Qbar[i]=np.nan
                                 else:
                                     Qbar[i]=self.alg_dict[alg][reach]['q33']
