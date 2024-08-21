@@ -15,9 +15,10 @@ import numpy as np
 from moi.Input import Input
 from moi.Integrate import Integrate
 from moi.Output import Output
+from sos_read.sos_read import download_sos
 
 
-def get_basin_data(basin_json,index_to_run):
+def get_basin_data(basin_json,index_to_run,tmp_dir,sos_bucket):
     """Extract reach identifiers and return dictionary.
     
     Dictionary is organized with a key of reach identifier and a value of
@@ -35,6 +36,11 @@ def get_basin_data(basin_json,index_to_run):
 
     with open(basin_json) as json_file:
         data = json.load(json_file)
+
+    # download sos file to temp location
+    if sos_bucket:
+        sos_file = tmp_dir.joinpath(data[index]["sos"])
+        download_sos(sos_bucket, sos_file)
 
 
     # ~~Error Handling~~
@@ -54,7 +60,7 @@ def get_basin_data(basin_json,index_to_run):
             "sword": data[index]["sword"]
         }
     except:
-                return {
+        return {
             #"basin_id" : int(data["basin_id"]),
             "basin_id" : data["basin_id"], #hope it's ok not to have basin ids always integers?
             "reach_ids" : [str(i) for i in data[index]["reach_id"]],
@@ -223,38 +229,48 @@ def main():
         Verbose=True
     else:
         Verbose=False
+        
+    # branch
+    Branch=args.branch
 
     #context
-    if args.index:
+    if args.index >= 0:
         index_to_run=args.index
     else:
         index_to_run=-235
+    print('index_to_run: ', index_to_run)
 
     #data directories
     if index_to_run == -235 or type(os.environ.get("AWS_BATCH_JOB_ID")) != type(None):
         INPUT_DIR = Path("/mnt/data/input")
         FLPE_DIR = Path("/mnt/data/flpe")
         OUTPUT_DIR = Path("/mnt/data/output")
+        TMP_DIR = Path("/tmp")
     else:
         #basedir=Path("/home/mdurand_umass_edu/dev-confluence/mnt/")
         basedir=Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/ohio_offline_runs/mnt")
         INPUT_DIR = basedir.joinpath("input") 
         FLPE_DIR = basedir.joinpath("flpe")
         OUTPUT_DIR = basedir.joinpath("moi")
+        TMP_DIR = basedir.joinpath("tmp")
 
     #basin data
     basin_json = INPUT_DIR.joinpath(args.basinjson) #turn this on for standard operations: AWS or running default basin file
     #basin_json = Path("/home/mdurand_umass_edu/dev-confluence/mnt/").joinpath(args.basinjson) #turn this on to use a local basin file
     print('Using',basin_json)           
 
-    basin_data = get_basin_data(basin_json,index_to_run)
+    basin_data = get_basin_data(basin_json,index_to_run,TMP_DIR,args.sosbucket)
 
     print('Running ',Branch,' branch.')
 
     print('setting moi params')
     params_dict=set_moi_params()
 
-    input = Input(FLPE_DIR, INPUT_DIR / "sos/", INPUT_DIR / "swot", INPUT_DIR / "sword", basin_data,Branch,Verbose)
+    if args.sosbucket:
+        sos_dir = TMP_DIR
+    else:
+        sos_dir = INPUT_DIR.joinpath("sos")
+    input = Input(FLPE_DIR, sos_dir, INPUT_DIR / "swot", INPUT_DIR / "sword", basin_data,Branch,Verbose)
     print('Exctracting sword...')
     input.extract_sword()
 
