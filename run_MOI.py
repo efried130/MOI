@@ -2,6 +2,7 @@
 """
 
 # Standard imports
+import argparse
 import json
 import os
 from pathlib import Path
@@ -14,9 +15,10 @@ import numpy as np
 from moi.Input import Input
 from moi.Integrate import Integrate
 from moi.Output import Output
+from sos_read.sos_read import download_sos
 
 
-def get_basin_data(basin_json,index_to_run):
+def get_basin_data(basin_json,index_to_run,tmp_dir,sos_bucket):
     """Extract reach identifiers and return dictionary.
     
     Dictionary is organized with a key of reach identifier and a value of
@@ -34,6 +36,11 @@ def get_basin_data(basin_json,index_to_run):
 
     with open(basin_json) as json_file:
         data = json.load(json_file)
+
+    # download sos file to temp location
+    if sos_bucket:
+        sos_file = tmp_dir.joinpath(data[index]["sos"])
+        download_sos(sos_bucket, sos_file)
 
 
     # ~~Error Handling~~
@@ -53,7 +60,7 @@ def get_basin_data(basin_json,index_to_run):
             "sword": data[index]["sword"]
         }
     except:
-                return {
+        return {
             #"basin_id" : int(data["basin_id"]),
             "basin_id" : data["basin_id"], #hope it's ok not to have basin ids always integers?
             "reach_ids" : [str(i) for i in data[index]["reach_id"]],
@@ -169,66 +176,101 @@ def set_moi_params():
     return moi_params
 
 
-def main():
+def create_args():
+    """Create and return argparsers with command line arguments."""
+    
+    arg_parser = argparse.ArgumentParser(description='Integrate FLPE')
+    arg_parser.add_argument('-i',
+                            '--index',
+                            type=int,
+                            help='Index to specify input data to execute on')
+    arg_parser.add_argument('-j',
+                            '--basinjson',
+                            type=str,
+                            help='Name of the basin.json',
+                            default='basin.json')
+    arg_parser.add_argument('-v',
+                            '--verbose',
+                            help='Indicates verbose logging',
+                            action='store_true')
+    arg_parser.add_argument('-b',
+                            '--branch',
+                            type=str,
+                            help='Indicates constrained or unconstrained run',
+                            choices=['constrained', 'unconstrained'],
+                            default='unconstrained')
+    arg_parser.add_argument('-s',
+                            '--sosbucket',
+                            type=str,
+                            help='Name of the SoS bucket and key to download from',
+                            default='')
+    return arg_parser
 
-    print('basin file:',sys.argv[1])
-    print('verbose flag:',sys.argv[2])
-    print('branch:',sys.argv[3])
+
+def main():
+    
+    # commandline arguments
+    arg_parser = create_args()
+    args = arg_parser.parse_args()
+
+    print('index: ', args.index)
+    print('basin file: ', args.basinjson)
+    print('verbose flag: ', args.verbose)
+    print('branch: ', args.branch)
+    print('sosbucket: ', args.sosbucket)
+    
     try:
         print('index:',sys.argv[4])
     except:
         print('running on AWS index')
 
     # verbose 
-    try: 
-        VerboseFlag=sys.argv[2]
-        if VerboseFlag == '-v': 
-            Verbose=True
-        else:
-            Verbose=False
-    except IndexError:
+    if args.verbose:
+        Verbose=True
+    else:
         Verbose=False
-
-    #branch
-    try:
-        Branch=sys.argv[3]
-    except IndexError:
-        Branch='unconstrained'
+        
+    # branch
+    Branch=args.branch
 
     #context
-    try:
-        index_to_run=int(sys.argv[4]) #integer
-    except IndexError:
+    if args.index >= 0:
+        index_to_run=args.index
+    else:
         index_to_run=-235
+    print('index_to_run: ', index_to_run)
 
     #data directories
     if index_to_run == -235 or type(os.environ.get("AWS_BATCH_JOB_ID")) != type(None):
         INPUT_DIR = Path("/mnt/data/input")
         FLPE_DIR = Path("/mnt/data/flpe")
         OUTPUT_DIR = Path("/mnt/data/output")
+        TMP_DIR = Path("/tmp")
     else:
         #basedir=Path("/home/mdurand_umass_edu/dev-confluence/mnt/")
         basedir=Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/ohio_offline_runs/mnt")
         INPUT_DIR = basedir.joinpath("input") 
         FLPE_DIR = basedir.joinpath("flpe")
         OUTPUT_DIR = basedir.joinpath("moi")
+        TMP_DIR = basedir.joinpath("tmp")
 
     #basin data
-    try:
-        basin_json = INPUT_DIR.joinpath(sys.argv[1]) #turn this on for standard operations: AWS or running default basin file
-        #basin_json = Path("/home/mdurand_umass_edu/dev-confluence/mnt/").joinpath(sys.argv[1]) #turn this on to use a local basin file
-        print('Using',basin_json)           
-    except IndexError:
-        basin_json = INPUT_DIR.joinpath("basin.json") 
+    basin_json = INPUT_DIR.joinpath(args.basinjson) #turn this on for standard operations: AWS or running default basin file
+    #basin_json = Path("/home/mdurand_umass_edu/dev-confluence/mnt/").joinpath(args.basinjson) #turn this on to use a local basin file
+    print('Using',basin_json)           
 
-    basin_data = get_basin_data(basin_json,index_to_run)
+    basin_data = get_basin_data(basin_json,index_to_run,TMP_DIR,args.sosbucket)
 
     print('Running ',Branch,' branch.')
 
     print('setting moi params')
     params_dict=set_moi_params()
 
-    input = Input(FLPE_DIR, INPUT_DIR / "sos/", INPUT_DIR / "swot", INPUT_DIR / "sword", basin_data,Branch,Verbose)
+    if args.sosbucket:
+        sos_dir = TMP_DIR
+    else:
+        sos_dir = INPUT_DIR.joinpath("sos")
+    input = Input(FLPE_DIR, sos_dir, INPUT_DIR / "swot", INPUT_DIR / "sword", basin_data,Branch,Verbose)
     print('Exctracting sword...')
     input.extract_sword()
 
