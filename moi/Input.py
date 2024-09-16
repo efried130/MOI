@@ -278,12 +278,12 @@ class Input:
                 sd_file = self.alg_dir / "sad" / f"{r_id}_sad.nc"
                 sv_file = self.alg_dir / "sic4dvar" / f"{r_id}_sic4dvar.nc"
                 #more robust os agnostic approach to finding files
-                mm_file = glob(os.path.join(self.alg_dir,"metroman", f"*{r_id}*_metroman.nc"))
+                mm_file = self.alg_dir / "metroman" / f"{r_id}_metroman.nc"
 
                 if not mm_file:
                     mm_file=Path('dir/that/does/not/exist')  #this sets mm_file.exists() to false
                 else: 
-                    mm_file = Path(mm_file[0]) 
+                    mm_file = Path(mm_file) 
 
                 self.__extract_valid(r_id, gb_file, hv_file, mo_file, sd_file, mm_file, sv_file)
 
@@ -406,13 +406,13 @@ class Input:
         # metroman    
         if mm_file.exists():
             mm = Dataset(mm_file, 'r', format="NETCDF4")
-            index = np.where(mm["reach_id"][:] == int(r_id))
+            # index = np.where(mm["reach_id"][:] == int(r_id))
             self.alg_dict["metroman"][r_id] = {
                  "s1-flpe-exists": True,
-                 "q" : mm["allq"][index].filled(np.nan),
-                 "na" : mm["nahat"][index].filled(np.nan),
-                 "x1" : mm["x1hat"][index].filled(np.nan),
-                 "a0" : mm["A0hat"][index].filled(np.nan)
+                 "q" : mm["average"]["allq"][:].filled(np.nan),
+                 "na" : mm["average"]["nahat"][:].filled(np.nan),
+                 "x1" : mm["average"]["x1hat"][:].filled(np.nan),
+                 "a0" : mm["average"]["A0hat"][:].filled(np.nan)
             }
             mm.close()
             #print('MetroMan file found. ')
