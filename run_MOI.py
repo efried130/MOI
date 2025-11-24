@@ -15,7 +15,6 @@ import numpy as np
 from moi.Input import Input
 from moi.Integrate import Integrate
 from moi.Output import Output
-from sos_read.sos_read import download_sos
 
 
 def get_basin_data(basin_json,index_to_run,tmp_dir,sos_bucket):
@@ -39,6 +38,7 @@ def get_basin_data(basin_json,index_to_run,tmp_dir,sos_bucket):
 
     # download sos file to temp location
     if sos_bucket:
+        from sos_read.sos_read import download_sos
         sos_file = tmp_dir.joinpath(data[index]["sos"])
         download_sos(sos_bucket, sos_file)
 
@@ -170,7 +170,8 @@ def set_moi_params():
         'niter': 4,               #default: 4
         'method':'linear',        #default: 'linear'
         'quit_before_flpe':False, #default: False
-        'apply_patches': False #default: False
+        'apply_patches': False, #default: False
+        'write_fill_only': True #default: False
     }
 
     return moi_params
@@ -247,8 +248,8 @@ def main():
         OUTPUT_DIR = Path("/mnt/data/output")
         TMP_DIR = Path("/tmp")
     else:
-        #basedir=Path("/home/mdurand_umass_edu/dev-confluence/mnt/")
-        basedir=Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/ohio_offline_runs/mnt")
+        basedir=Path("/home/mdurand_umass_edu/dev-confluence/mnt/")
+        #basedir=Path("/Users/mtd/Analysis/SWOT/Discharge/Confluence/ohio_offline_runs/mnt")
         INPUT_DIR = basedir.joinpath("input") 
         FLPE_DIR = basedir.joinpath("flpe")
         OUTPUT_DIR = basedir.joinpath("moi")
@@ -291,7 +292,7 @@ def main():
     integrate = Integrate(input.alg_dict, input.basin_dict, input.sos_dict, input.sword_dict,input.obs_dict,params_dict,Branch,Verbose)
     integrate.integrate()
 
-    output = Output(input.basin_dict, OUTPUT_DIR, integrate.integ_dict, integrate.alg_dict, integrate.obs_dict, input.sword_dir)
+    output = Output(input.basin_dict, OUTPUT_DIR, integrate.integ_dict, integrate.alg_dict, integrate.obs_dict, input.sword_dir,params_dict)
     output.write_output()
     # output.write_sword_output(Branch)
 
