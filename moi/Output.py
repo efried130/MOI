@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 import time
 import random
-import os
+import os,sys
 
 # Third-party imports
 from netCDF4 import Dataset
@@ -37,7 +37,7 @@ class Output:
         Write data stored to NetCDF file labelled with basin id
     """
 
-    def __init__(self, basin_dict, out_dir, integ_dict, alg_dict, obs_dict, sword_dir):
+    def __init__(self, basin_dict, out_dir, integ_dict, alg_dict, obs_dict, sword_dir,params_dict):
         """
         Parameters
         ----------
@@ -55,6 +55,7 @@ class Output:
         self.alg_dict = alg_dict
         self.obs_dict = obs_dict
         self.sword_dir = sword_dir
+        self.params_dict=params_dict
         
     def write_output(self):
         """Write data stored to NetCDF files for each reach
@@ -76,7 +77,21 @@ class Output:
             print('debug mode: writing out all reach ids')
             reaches_to_write=self.basin_dict['reach_ids_all']
 
+
         for reach in reaches_to_write:
+             # this first block  sets everything to nan, allowing "blank" output files to be written
+             if self.params_dict['write_fill_only']:
+                 print('writing fill values only')
+                 for algo in self.alg_dict.keys():
+                     print('... setting ',algo,'to fill')
+                     if 'q' in self.alg_dict[algo][reach]['integrator'].keys():
+                         self.alg_dict[algo][reach]['integrator']['q'][:]=np.nan
+                     self.alg_dict[algo][reach]['integrator']['qbar']=np.nan
+                     self.alg_dict[algo][reach]['integrator']['q33']=np.nan
+                     self.alg_dict[algo][reach]['integrator']['sbQ_rel']=np.nan
+                     if 'qbar' in self.alg_dict[algo][reach].keys():
+                         self.alg_dict[algo][reach]['qbar']=np.nan
+
              not_obs = False
              # just write out the steady flow discharge values if this was an unobserved reach
              try:
@@ -86,12 +101,12 @@ class Output:
              except:
                 print('reach not in obs_dict... filling with default')
                 not_obs = True
-             if reach not in self.basin_dict['reach_ids']:
-                print(reach)
-                print(type(reach))
-                print(self.basin_dict['reach_ids'][0])
-                print(type(self.basin_dict['reach_ids'][0]))
-                print('second condition..')
+             if reach not in self.basin_dict['reach_ids']: 
+                #print(reach)
+                #print(type(reach))
+                #print(self.basin_dict['reach_ids'][0])
+                #print(type(self.basin_dict['reach_ids'][0]))
+                #print('second condition...')
                 not_obs = True
              if not_obs:
                 print('not obs found... doing regular')
@@ -149,9 +164,9 @@ class Output:
              iInsert=iDelete-np.arange(nDelete)
              iInsert=np.reshape(iInsert,[nDelete,]) 
              self.obs_dict[reach]['nt'] += nDelete
-             print(self.alg_dict['neobam'])
-             print(self.alg_dict['neobam'][reach]['integrator'])
-             print(self.alg_dict['neobam'][reach]['integrator']['q'],iInsert,fillvalue,1)
+             #print(self.alg_dict['neobam'])
+             #print(self.alg_dict['neobam'][reach]['integrator'])
+             #print(self.alg_dict['neobam'][reach]['integrator']['q'],iInsert,fillvalue,1)
 
              self.alg_dict['neobam'][reach]['integrator']['q']=np.insert( \
                    self.alg_dict['neobam'][reach]['integrator']['q'],iInsert,fillvalue,1)
